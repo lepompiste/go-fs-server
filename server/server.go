@@ -10,7 +10,8 @@ import (
 
 var DIRPATH string
 var PORTNUM string
-var DB *sql.DB
+var DBPATH string
+var _db *sql.DB
 
 type BaseApiResponse struct {
 	Status string `json:"status"`
@@ -22,8 +23,9 @@ type BaseApiResponse struct {
 func InitServer(dir, dbp, port string) {
 	DIRPATH = dir
 	PORTNUM = port
+	DBPATH = dbp
 
-	initInstall(dbp)
+	initInstall()
 
 	err := os.Chdir(DIRPATH)
 	if err != nil {
@@ -33,5 +35,5 @@ func InitServer(dir, dbp, port string) {
 
 	router := httprouter.New()
 	initApi(router)
-	http.ListenAndServe(":" + port, router)
+	http.ListenAndServe(":" + PORTNUM, router)
 }

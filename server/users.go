@@ -36,7 +36,20 @@ func userLogin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func userLogout(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//token := r.URL.Query().Get("token")
+	login := r.URL.Query().Get("login")
+	token := r.URL.Query().Get("token")
+
+	resp := BaseApiResponse{}
+	if checkSession(login, token) {
+		logout(token)
+		resp.Status = "success"
+
+	} else {
+		resp.Status = "error"
+		resp.Message = "No valid session"
+	}
+	bytes, _ := json.Marshal(resp)
+	fmt.Fprint(w, string(bytes))
 }
 
 type TestSession struct {

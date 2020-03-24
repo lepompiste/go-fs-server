@@ -3,6 +3,9 @@ package server
 import (
 	"time"
 	"log"
+	"fmt"
+	"os"
+	"database/sql"
 )
 
 type User struct {
@@ -13,19 +16,37 @@ type User struct {
 // checkSession return true if login and sessionId matches, and if session is not expired
 // delete all expired sessions
 func checkSession(login, sessionId string) bool {
-	DB.Exec("DELETE FROM sessions WHERE expires < ?", time.Now().Unix())
-	rows, err := DB.Query("SELECT * FROM sessions WHERE login = ? AND sid = ?", login, sessionId)
+	/*db, errSQLOpen := sql.Open("sqlite3", DBPATH + "/fs-server.db")
+	defer db.Close()
+	if errSQLOpen != nil {
+		fmt.Println("Error initializing database")
+		os.Exit(-1)
+	}*/
+
+	_db.Exec("DELETE FROM sessions WHERE expires < ?", time.Now().Unix())
+	rows, err := _db.Query("SELECT * FROM sessions WHERE login = ? AND sid = ?", login, sessionId)
 	if err != nil {
 		log.Fatal(err)
 	}
+	var res bool = false
 	for rows.Next() {
-		return true
+		res = true
 	}
-	return false
+	rows.Close()
+	var new_tmstmp int = int(time.Now().Add(2 * time.Hour).Unix())
+	_db.Exec("UPDATE sessions SET expires = ? WHERE sid = ?", new_tmstmp, sessionId)// TOFIX
+	return res
 }
 
 func getUser(login string) (*User, bool) {
-	row := DB.QueryRow("SELECT login, privilege FROM users WHERE login = ?", login)
+	db, errSQLOpen := sql.Open("sqlite3", DBPATH + "/fs-server.db")
+	defer db.Close()
+	if errSQLOpen != nil {
+		fmt.Println("Error initializing database")
+		os.Exit(-1)
+	}
+
+	row := db.QueryRow("SELECT login, privilege FROM users WHERE login = ?", login)
 	resp := User{}
 	err := row.Scan(&resp.Login, &resp.Privilege)
 	if err != nil {
@@ -33,4 +54,15 @@ func getUser(login string) (*User, bool) {
 	} else {
 		return &resp, true
 	}
+}
+
+func logout(sid string) {
+	db, errSQLOpen := sql.Open("sqlite3", DBPATH + "/fs-server.db")
+	defer db.Close()
+	if errSQLOpen != nil {
+		fmt.Println("Error initializing database")
+		os.Exit(-1)
+	}
+
+	db.Exec("DELETE FROM sessions WHERE sid = ?", sid)
 }
