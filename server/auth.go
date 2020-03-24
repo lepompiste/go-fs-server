@@ -1,30 +1,80 @@
 package server
 
 import (
-	"time"
 	"log"
-	"fmt"
-	"os"
-	"database/sql"
+	"math/rand"
+	"net/http"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
+// User represent user
 type User struct {
-	Login string
-	Privilege int
+	Login     string `json:"login"`
+	Privilege int    `json:"privilege"`
+}
+
+// Auth basic auth representation
+type Auth struct {
+	User
+	Token    string `json:"token"`
+	Exprires int    `json:"expires"`
+}
+
+// RandStringRunes generates random string of n runes among `among` runes
+func RandStringRunes(n int, among string) string {
+	letterRunes := []rune(among)
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
+// makeSession generate token and register new session into the database
+func (s *server) makeSession(login string) (token string, expires int) {
+	token = RandStringRunes(64, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	expires = int(time.Now().Add(2 * time.Hour).Unix())
+
+	s.db.Exec("INSERT INTO sessions (login, token, expires) VALUES (?, ?, ?)", login, token, expires)
+
+	return
+}
+
+// checkAuth check for login and password and return the Auth infos if login/password match, nil else
+func (s *server) checkAuth(login, password string) *Auth {
+	var _login, _pwHash string
+	var _privilege int
+	row := s.db.QueryRow("SELECT login, password, privilege FROM users WHERE login = ?", login)
+	err := row.Scan(&_login, &_pwHash, &_privilege)
+
+	if err != nil {
+		return nil // No user named login
+	}
+
+	errPw := bcrypt.CompareHashAndPassword([]byte(_pwHash), []byte(password))
+	if errPw != nil {
+		return nil
+	}
+
+	var authInfos Auth
+	authInfos.Login = _login
+	authInfos.Privilege = _privilege
+
+	_token, _expires := s.makeSession(_login)
+
+	authInfos.Token = _token
+	authInfos.Exprires = _expires
+
+	return &authInfos
 }
 
 // checkSession return true if login and sessionId matches, and if session is not expired
 // delete all expired sessions
-func checkSession(login, sessionId string) bool {
-	/*db, errSQLOpen := sql.Open("sqlite3", DBPATH + "/fs-server.db")
-	defer db.Close()
-	if errSQLOpen != nil {
-		fmt.Println("Error initializing database")
-		os.Exit(-1)
-	}*/
-
-	_db.Exec("DELETE FROM sessions WHERE expires < ?", time.Now().Unix())
-	rows, err := _db.Query("SELECT * FROM sessions WHERE login = ? AND sid = ?", login, sessionId)
+func (s *server) checkSession(login, token string) bool {
+	s.db.Exec("DELETE FROM sessions WHERE expires < ?", time.Now().Unix())
+	rows, err := s.db.Query("SELECT * FROM sessions WHERE login = ? AND token = ?", login, token)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,36 +83,31 @@ func checkSession(login, sessionId string) bool {
 		res = true
 	}
 	rows.Close()
-	var new_tmstmp int = int(time.Now().Add(2 * time.Hour).Unix())
-	_db.Exec("UPDATE sessions SET expires = ? WHERE sid = ?", new_tmstmp, sessionId)// TOFIX
+	var newTmstmp int = int(time.Now().Add(2 * time.Hour).Unix())
+	s.db.Exec("UPDATE sessions SET expires = ? WHERE token = ?", newTmstmp, token)
 	return res
 }
 
-func getUser(login string) (*User, bool) {
-	db, errSQLOpen := sql.Open("sqlite3", DBPATH + "/fs-server.db")
-	defer db.Close()
-	if errSQLOpen != nil {
-		fmt.Println("Error initializing database")
-		os.Exit(-1)
-	}
-
-	row := db.QueryRow("SELECT login, privilege FROM users WHERE login = ?", login)
+// getUser is used to get user infos /!\ use it after checking the user is properly logged in
+func (s *server) getUser(login string) (*User, bool) {
+	row := s.db.QueryRow("SELECT login, privilege FROM users WHERE login = ?", login)
 	resp := User{}
 	err := row.Scan(&resp.Login, &resp.Privilege)
 	if err != nil {
 		return nil, false
-	} else {
-		return &resp, true
 	}
+	return &resp, true
 }
 
-func logout(sid string) {
-	db, errSQLOpen := sql.Open("sqlite3", DBPATH + "/fs-server.db")
-	defer db.Close()
-	if errSQLOpen != nil {
-		fmt.Println("Error initializing database")
-		os.Exit(-1)
-	}
+func (s *server) logout(login, token string) {
+	s.db.Exec("DELETE FROM sessions WHERE login = ? AND token = ?", login, token)
+}
 
-	db.Exec("DELETE FROM sessions WHERE sid = ?", sid)
+// logged is used to automatically respond when check
+func (s *server) logged(login, token string, w http.ResponseWriter) bool {
+	if !s.checkSession(login, token) {
+		errorResponse(w, "no valid login/token")
+		return false
+	}
+	return true
 }

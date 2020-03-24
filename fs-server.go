@@ -2,9 +2,16 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
+	"time"
+
 	"github.com/lepompiste/fs-server/server"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	if len(os.Args) >= 3 {

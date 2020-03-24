@@ -1,129 +1,126 @@
 package server
 
 import (
-	"os"
 	"io"
-	"fmt"
-	"net/http"
 	"io/ioutil"
-	"github.com/julienschmidt/httprouter"
-	"encoding/json"
+	"net/http"
+	"os"
 	"strings"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 const (
+	// MAXUPLOAD Maximum size of uploaded files
 	MAXUPLOAD = 20000000000
 )
 
+// DirEntry represents file or directory
 type DirEntry struct {
-	Name string `json:"name"`
-	IsDir bool `json:"isDir"`
+	Name  string `json:"name"`
+	IsDir bool   `json:"isDir"`
 }
 
+// LsResponse represents direcory listing response
 type LsResponse struct {
-	BaseApiResponse
-	Path string `json:"path"`
+	BaseAPIResponse
+	Path      string     `json:"path"`
 	Directory []DirEntry `json:"directory"`
 }
 
-func ls(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	path := r.URL.Query().Get("path")
-
-	w.Header().Set("Content-Type", "application/json")
-
+func verifyPath(path string, w http.ResponseWriter) bool {
 	parts := strings.Split(path, "/")
 	for _, part := range parts {
 		if part == ".." {
-			resp := BaseApiResponse{"error", "Forbidden use of .."}
-			bytes, _ := json.Marshal(resp)
-			fmt.Fprint(w, string(bytes))
-			return
+			errorResponse(w, "Forbidden use of ..")
+			return false
 		}
+	}
+	return true
+}
+
+func (s *server) ls(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
+	w.Header().Set("Content-Type", "application/json")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
 	}
 
 	files, err := ioutil.ReadDir("." + path)
 
 	if err != nil {
-		resp := BaseApiResponse{"error", err.Error()}
-		bytes, _ := json.Marshal(resp)
-		fmt.Fprint(w, string(bytes))
+		errorResponse(w, "error reading")
 	} else {
-		resp := LsResponse{Path:path, Directory:[]DirEntry{}}
+		resp := LsResponse{Path: path, Directory: []DirEntry{}}
 		resp.Status = "success"
 		for _, file := range files {
-			resp.Directory = append(resp.Directory, DirEntry{Name:file.Name(), IsDir:file.IsDir()})
+			resp.Directory = append(resp.Directory, DirEntry{Name: file.Name(), IsDir: file.IsDir()})
 		}
 
-		bytes, _ := json.Marshal(resp)
-		fmt.Fprint(w, string(bytes))
+		successResponse(w, resp)
 	}
-	
+
 }
 
-func rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	path := r.URL.Query().Get("path")
-
+func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
 	w.Header().Set("Content-Type", "application/json")
 
-	parts := strings.Split(path, "/")
-	for _, part := range parts {
-		if part == ".." {
-			resp := BaseApiResponse{"error", "Forbidden use of .."}
-			bytes, _ := json.Marshal(resp)
-			fmt.Fprint(w, string(bytes))
-			return
-		}
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
 	}
 
 	err := os.Remove("." + path)
 
 	if err != nil {
-		resp := BaseApiResponse{"error", err.Error()}
-		bytes, _ := json.Marshal(resp)
-		fmt.Fprint(w, string(bytes))
-	} else {
-		resp := BaseApiResponse{"success", ""}
-		bytes, _ := json.Marshal(resp)
-		fmt.Fprint(w, string(bytes))
+		errorResponse(w, "error removing")
+		return
 	}
+	successResponse(w, BaseAPIResponse{Status: "success"})
 }
 
-func upload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	path := r.URL.Query().Get("path")
-
-	w.Header().Set("Content-Type", "application/json")
-
-	parts := strings.Split(path, "/")
-	for _, part := range parts {
-		if part == ".." {
-			resp := BaseApiResponse{"error", "Forbidden use of .."}
-			bytes, _ := json.Marshal(resp)
-			fmt.Fprint(w, string(bytes))
-			return
-		}
-	}
-
-
+func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	errMultipartForm := r.ParseMultipartForm(MAXUPLOAD)
 
 	if errMultipartForm != nil {
-		resp := BaseApiResponse{"error", errMultipartForm.Error()}
-		bytes, _ := json.Marshal(resp)
-		fmt.Fprint(w, string(bytes))
+		errorResponse(w, "error uploading")
 		return
 	}
 
-	formdata := r.MultipartForm
-	files := formdata.File["uploads"]
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
+	w.Header().Set("Content-Type", "application/json")
 
-	for i, _ := range files { // loop through the files one by one
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
+	}
+
+	files := r.MultipartForm.File["uploads"]
+
+	for i := range files { // loop through the files one by one
 		file, errFile := files[i].Open()
 		defer file.Close()
 
 		if errFile != nil {
-			resp := BaseApiResponse{"error", errFile.Error()}
-			bytes, _ := json.Marshal(resp)
-			fmt.Fprint(w, string(bytes))
+			errorResponse(w, "error uploading")
 			return
 		}
 
@@ -131,23 +128,17 @@ func upload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		defer out.Close()
 
 		if errOut != nil {
-			resp := BaseApiResponse{"error", errOut.Error()}
-			bytes, _ := json.Marshal(resp)
-			fmt.Fprint(w, string(bytes))
+			errorResponse(w, "error uploading")
 			return
 		}
 
 		_, errCopy := io.Copy(out, file)
 
 		if errCopy != nil {
-			resp := BaseApiResponse{"error", errCopy.Error()}
-			bytes, _ := json.Marshal(resp)
-			fmt.Fprint(w, string(bytes))
+			errorResponse(w, "error uploading")
 			return
 		}
 	}
 
-	resp := BaseApiResponse{"success", ""}
-	bytes, _ := json.Marshal(resp)
-	fmt.Fprint(w, string(bytes))
+	successResponse(w, BaseAPIResponse{Status: "success"})
 }
