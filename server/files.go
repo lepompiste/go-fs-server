@@ -83,7 +83,7 @@ func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 		return
 	}
 
-	err := os.Remove("." + path)
+	err := os.RemoveAll("." + path)
 
 	if err != nil {
 		errorResponse(w, "error removing")
@@ -95,6 +95,8 @@ func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	errMultipartForm := r.ParseMultipartForm(MAXUPLOAD)
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if errMultipartForm != nil {
 		errorResponse(w, "error uploading")
 		return
@@ -103,7 +105,6 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	login := r.FormValue("login")
 	token := r.FormValue("token")
 	path := r.FormValue("path")
-	w.Header().Set("Content-Type", "application/json")
 
 	if !s.logged(login, token, w) {
 		return
@@ -141,4 +142,20 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	successResponse(w, BaseAPIResponse{Status: "success"})
+}
+
+func (s *server) cat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
+	w.Header().Set("Content-Type", "application/json")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
+	}
+	errorResponse(w, "Fonction pas terminee")
 }
