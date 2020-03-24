@@ -1,2 +1,2 @@
-*.exe
-*.db
+./fs-server.exe
+./fs-server.db
