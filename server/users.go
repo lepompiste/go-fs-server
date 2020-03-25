@@ -181,10 +181,11 @@ func (s *server) sessionTest(w http.ResponseWriter, r *http.Request, ps httprout
 		resp := testSession{}
 		resp.Status = "success"
 		resp.Message = "successfully got the connection"
-		usr, _ := s.getUser(login)
-		resp.Login = usr.Login
-		resp.Token = token
-		resp.Privilege = usr.Privilege
+		auth, _ := s.getAuth(login, token)
+		resp.Login = auth.Login
+		resp.Token = auth.Token
+		resp.Privilege = auth.Privilege
+		resp.Exprires = auth.Exprires
 		successResponse(w, resp)
 	} else {
 		errorResponse(w, "No connection")

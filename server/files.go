@@ -31,8 +31,8 @@ type LsResponse struct {
 func verifyPath(path string, w http.ResponseWriter) bool {
 	parts := strings.Split(path, "/")
 	for _, part := range parts {
-		if part == ".." {
-			errorResponse(w, "Forbidden use of ..")
+		if part == ".." || part == "." {
+			errorResponse(w, "Forbidden use of .. or .")
 			return false
 		}
 	}
@@ -56,7 +56,7 @@ func (s *server) ls(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	files, err := ioutil.ReadDir("." + path)
 
 	if err != nil {
-		errorResponse(w, "error reading")
+		errorResponse(w, err.Error())
 	} else {
 		resp := LsResponse{Path: path, Directory: []DirEntry{}}
 		resp.Status = "success"
@@ -86,7 +86,7 @@ func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	err := os.RemoveAll("." + path)
 
 	if err != nil {
-		errorResponse(w, "error removing")
+		errorResponse(w, err.Error())
 		return
 	}
 	successResponse(w, BaseAPIResponse{Status: "success"})
@@ -98,7 +98,7 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	w.Header().Set("Content-Type", "application/json")
 
 	if errMultipartForm != nil {
-		errorResponse(w, "error uploading")
+		errorResponse(w, errMultipartForm.Error())
 		return
 	}
 
@@ -121,7 +121,7 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		defer file.Close()
 
 		if errFile != nil {
-			errorResponse(w, "error uploading")
+			errorResponse(w, errFile.Error())
 			return
 		}
 
@@ -129,19 +129,24 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		defer out.Close()
 
 		if errOut != nil {
-			errorResponse(w, "error uploading")
+			errorResponse(w, errOut.Error())
 			return
 		}
 
 		_, errCopy := io.Copy(out, file)
 
 		if errCopy != nil {
-			errorResponse(w, "error uploading")
+			errorResponse(w, errCopy.Error())
 			return
 		}
 	}
 
 	successResponse(w, BaseAPIResponse{Status: "success"})
+}
+
+type catResponse struct {
+	BaseAPIResponse
+	Content string `json:"content"`
 }
 
 func (s *server) cat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -157,5 +162,94 @@ func (s *server) cat(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	if !verifyPath(path, w) {
 		return
 	}
-	errorResponse(w, "Fonction pas terminee")
+
+	dat, err := ioutil.ReadFile("." + path)
+
+	if err != nil {
+		errorResponse(w, err.Error())
+		return
+	}
+
+	resp := catResponse{}
+	resp.Status = "success"
+	resp.Content = string(dat)
+
+	successResponse(w, resp)
+}
+
+func (s *server) mkdir(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
+	w.Header().Set("Content-Type", "application/json")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
+	}
+
+	err := os.MkdirAll("."+path, os.ModePerm)
+
+	if err != nil {
+		errorResponse(w, err.Error())
+		return
+	}
+
+	resp := BaseAPIResponse{Status: "success"}
+	successResponse(w, resp)
+}
+
+func (s *server) touch(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
+	w.Header().Set("Content-Type", "application/json")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
+	}
+
+	file, err := os.OpenFile("."+path, os.O_CREATE, os.ModePerm)
+	defer file.Close()
+
+	if err != nil {
+		errorResponse(w, err.Error())
+		return
+	}
+
+	resp := BaseAPIResponse{Status: "success"}
+	successResponse(w, resp)
+}
+
+func (s *server) echo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
+	content := r.FormValue("content")
+	w.Header().Set("Content-Type", "application/json")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
+	}
+
+	err := ioutil.WriteFile("."+path, []byte(content), os.ModePerm)
+
+	if err != nil {
+		errorResponse(w, err.Error())
+		return
+	}
+
+	resp := BaseAPIResponse{Status: "success"}
+	successResponse(w, resp)
 }

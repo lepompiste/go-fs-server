@@ -46,6 +46,7 @@ func (s *server) makeSession(login string) (token string, expires int) {
 func (s *server) checkAuth(login, password string) *Auth {
 	var _login, _pwHash string
 	var _privilege int
+	s.db.Exec("DELETE FROM sessions WHERE expires < ?", time.Now().Unix())
 	row := s.db.QueryRow("SELECT login, password, privilege FROM users WHERE login = ?", login)
 	err := row.Scan(&_login, &_pwHash, &_privilege)
 
@@ -93,6 +94,22 @@ func (s *server) getUser(login string) (*User, bool) {
 	row := s.db.QueryRow("SELECT login, privilege FROM users WHERE login = ?", login)
 	resp := User{}
 	err := row.Scan(&resp.Login, &resp.Privilege)
+	if err != nil {
+		return nil, false
+	}
+	return &resp, true
+}
+
+// getUser is used to get auth infos
+func (s *server) getAuth(login, token string) (*Auth, bool) {
+	rowUser := s.db.QueryRow("SELECT login, privilege FROM users WHERE login = ?", login)
+	resp := Auth{}
+	err := rowUser.Scan(&resp.Login, &resp.Privilege)
+	if err != nil {
+		return nil, false
+	}
+	rowSession := s.db.QueryRow("SELECT token, expires FORM sessions WHERE login = ? AND token = ?", login, token)
+	err = rowSession.Scan(&resp.Token, &resp.Exprires)
 	if err != nil {
 		return nil, false
 	}

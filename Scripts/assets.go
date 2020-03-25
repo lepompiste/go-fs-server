@@ -11,7 +11,11 @@ import (
 
 func main() {
 	var fs http.FileSystem = http.Dir("../assets")
-	err := vfsgen.Generate(fs, vfsgen.Options{})
+	err := vfsgen.Generate(fs, vfsgen.Options{
+		Filename: "../server/assets_embedded.go",
+		PackageName: "server",
+		VariableName: "assets",
+	})
 	if err != nil {
 		log.Fatalln(err)
 	}

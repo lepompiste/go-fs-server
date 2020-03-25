@@ -3,7 +3,7 @@ var login, token = undefined
 var loginRequest = function() {
     m.request({
         method: "GET",
-        url: "../api/session/login",
+        url: "http://localhost:8008/api/session/login",
 		body: {
 			login: document.getElementById("login-username").value,
 			password: document.getElementById("login-password").value
@@ -47,6 +47,18 @@ var Login = {
 	}
 }
 
+var Logout = {
+	oninit: function() {
+		console.log("init")
+	},
+	view: function () {
+		return m("div", { "class": "container mt-5" }, "Déconnecté")
+	}
+}
+
 m.route(document.getElementById("view"), "/login", {
 	"/login": Login, // defines `https://localhost/#!/home`
+	"/logout": Logout
 })
+
+// get path window.location.search.replace("?", "")
