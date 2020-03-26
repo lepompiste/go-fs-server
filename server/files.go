@@ -253,3 +253,33 @@ func (s *server) echo(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	resp := BaseAPIResponse{Status: "success"}
 	successResponse(w, resp)
 }
+
+func (s *server) mv(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	src := r.FormValue("src")
+	dest := r.FormValue("dest")
+	w.Header().Set("Content-Type", "application/json")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(src, w) {
+		return
+	}
+
+	if !verifyPath(dest, w) {
+		return
+	}
+
+	err := os.Rename("."+src, "."+dest)
+
+	if err != nil {
+		errorResponse(w, err.Error())
+		return
+	}
+
+	resp := BaseAPIResponse{Status: "success"}
+	successResponse(w, resp)
+}

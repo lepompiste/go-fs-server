@@ -147,7 +147,7 @@ func (s *server) userLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 
 	resp := loginResponse{}
-	resp.Status = "status"
+	resp.Status = "success"
 	resp.Auth = *auth
 	successResponse(w, resp)
 }
@@ -188,6 +188,6 @@ func (s *server) sessionTest(w http.ResponseWriter, r *http.Request, ps httprout
 		resp.Exprires = auth.Exprires
 		successResponse(w, resp)
 	} else {
-		errorResponse(w, "No connection")
+		errorResponse(w, "Not logged in")
 	}
 }
