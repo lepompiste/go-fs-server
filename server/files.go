@@ -19,6 +19,7 @@ const (
 type DirEntry struct {
 	Name  string `json:"name"`
 	IsDir bool   `json:"isDir"`
+	Size  int64  `json:"size"`
 }
 
 // LsResponse represents direcory listing response
@@ -61,7 +62,7 @@ func (s *server) ls(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 		resp := LsResponse{Path: path, Directory: []DirEntry{}}
 		resp.Status = "success"
 		for _, file := range files {
-			resp.Directory = append(resp.Directory, DirEntry{Name: file.Name(), IsDir: file.IsDir()})
+			resp.Directory = append(resp.Directory, DirEntry{Name: file.Name(), IsDir: file.IsDir(), Size: file.Size()})
 		}
 
 		successResponse(w, resp)
@@ -282,4 +283,21 @@ func (s *server) mv(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 
 	resp := BaseAPIResponse{Status: "success"}
 	successResponse(w, resp)
+}
+
+func (s *server) get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+	path := r.FormValue("path")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	if !verifyPath(path, w) {
+		return
+	}
+
+	r.URL.Path = "" // avoid 301 to folder if url = index.html
+	http.ServeFile(w, r, "."+path)
 }

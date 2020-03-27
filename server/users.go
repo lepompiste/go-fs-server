@@ -158,12 +158,12 @@ func (s *server) userLogout(w http.ResponseWriter, r *http.Request, ps httproute
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if s.checkSession(login, token) {
-		s.logout(login, token)
-		successResponse(w, BaseAPIResponse{Status: "success"})
-	} else {
-		errorResponse(w, "No valid session")
+	if !s.logged(login, token, w) {
+		return
 	}
+
+	s.logout(login, token)
+	successResponse(w, BaseAPIResponse{Status: "success"})
 }
 
 type testSession struct {
@@ -177,17 +177,19 @@ func (s *server) sessionTest(w http.ResponseWriter, r *http.Request, ps httprout
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if s.checkSession(login, token) {
-		resp := testSession{}
-		resp.Status = "success"
-		resp.Message = "successfully got the connection"
-		auth, _ := s.getAuth(login, token)
-		resp.Login = auth.Login
-		resp.Token = auth.Token
-		resp.Privilege = auth.Privilege
-		resp.Exprires = auth.Exprires
-		successResponse(w, resp)
-	} else {
-		errorResponse(w, "Not logged in")
+	if !s.logged(login, token, w) {
+		return
 	}
+
+	resp := testSession{}
+	resp.Status = "success"
+	resp.Message = "successfully got the connection"
+	auth, _ := s.getAuth(login, token)
+
+	resp.Login = auth.Login
+	resp.Token = auth.Token
+	resp.Privilege = auth.Privilege
+	resp.Expires = auth.Expires
+
+	successResponse(w, resp)
 }

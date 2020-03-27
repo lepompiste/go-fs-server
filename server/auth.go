@@ -18,8 +18,8 @@ type User struct {
 // Auth basic auth representation
 type Auth struct {
 	User
-	Token    string `json:"token"`
-	Exprires int    `json:"expires"`
+	Token   string `json:"token"`
+	Expires int    `json:"expires"`
 }
 
 // RandStringRunes generates random string of n runes among `among` runes
@@ -66,7 +66,7 @@ func (s *server) checkAuth(login, password string) *Auth {
 	_token, _expires := s.makeSession(_login)
 
 	authInfos.Token = _token
-	authInfos.Exprires = _expires
+	authInfos.Expires = _expires
 
 	return &authInfos
 }
@@ -108,8 +108,8 @@ func (s *server) getAuth(login, token string) (*Auth, bool) {
 	if err != nil {
 		return nil, false
 	}
-	rowSession := s.db.QueryRow("SELECT token, expires FORM sessions WHERE login = ? AND token = ?", login, token)
-	err = rowSession.Scan(&resp.Token, &resp.Exprires)
+	rowSession := s.db.QueryRow("SELECT token, expires FROM sessions WHERE login = ? AND token = ?", login, token)
+	err = rowSession.Scan(&resp.Token, &resp.Expires)
 	if err != nil {
 		return nil, false
 	}
