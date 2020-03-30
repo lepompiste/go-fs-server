@@ -235,12 +235,17 @@ var Data = {
 					Data.app.directory = data.directory
 					Data.app.renderTab()
 				} else {
-					errorApp()
+					window.alert(data.message)
 				}
 			})
 		},
 		newFolder: function() {
 			directoryName = window.prompt("Create a directory on path : " + (path != "" ? path : "/"))
+
+			if (directoryName == null) {
+				return
+			}
+
 			l.requests.makej("GET", "./api/files/mkdir", {
 				query: {
 					login: getLogin(),
@@ -257,6 +262,11 @@ var Data = {
 		},
 		newFile: function() {
 			fileName = window.prompt("Create a file on path : " + (path != "" ? path : "/"))
+			
+			if (fileName == null) {
+				return
+			}
+			
 			l.requests.makej("GET", "./api/files/touch", {
 				query: {
 					login: getLogin(),
