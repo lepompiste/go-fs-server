@@ -22,6 +22,7 @@ func (s *server) initAPI(router *httprouter.Router) {
 	router.GET("/api/files/cat", s.cat)
 	router.GET("/api/files/echo", s.echo)
 	router.GET("/api/files/mv", s.mv)
+	router.GET("/api/files/get", s.get)
 
 	router.GET("/api/users/add", s.userAdd)
 	router.GET("/api/users/del", s.userDel)

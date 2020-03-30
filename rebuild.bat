@@ -2,4 +2,4 @@ cd Scripts
 Scripts.exe
 cd ..
 go build
-fs-server.exe . .
+fs-server.exe ../testfs ../testfs

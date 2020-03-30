@@ -2,19 +2,7 @@ const storageMode = sessionStorage
 var path = ""
 
 function redirect(_route, _path) {
-	if (_path != undefined) {
-		SimpleEfficientRouter.setURL(_route + "!" + _path)
-	} else {
-		SimpleEfficientRouter.setURL(_route)
-	}
-}
-
-/**
- * Evaluate path and set it in the `path` var
- */
-function evaluatePath() {
-	split = window.location.hash.split("!")
-	path = split.length > 2 ? split.slice(2).join("!") : "/"
+	l.routes.goto(_route, _path)
 }
 
 // use it to evaluate the error and display a message
@@ -32,6 +20,20 @@ function errorApp() {
 		window.alert("Error, you aren't logged in")
 		redirect("/login")
 	}
+}
+
+function fadeOut(element) {
+    var op = 1;  // initial opacity
+    var timer = setInterval(function () {
+        if (op <= 0.1){
+            clearInterval(timer);
+			element.style.display = 'none';
+			element.parentNode.removeChild(element)
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op -= op * 0.05;
+    }, 10);
 }
 
 /**
@@ -98,16 +100,25 @@ function isLoggedInFast() {
 	return false
 }
 
+function formatByteSize(size) {
+	_size = size
+	units = ["B", "KB", "MB", "GB"]
+	unit_number = 0
+	while (~~(_size / 1000) >= 1 && unit_number < 3) {
+		unit_number++
+		_size = ~~(_size / 1000)
+	}
+	return _size + " " + units[unit_number]
+}
+
 var testLoginRequest = function () {
 	resp = false
-	m.request({
-		method: "GET",
-        url: "./api/session/test",
-		params: {
+	l.requests.makej("GET", "./api/session/test", {
+		query: {
 			login: getLogin(),
 			token: getToken()
 		}
-    })
+	})
     .then(function(data) {
         if (data.status == "success") {
 			resp = true
@@ -122,10 +133,8 @@ var testLoginRequest = function () {
  * @param {string} _password 
  */
 var loginRequest = function(_login, _password) {
-    return m.request({
-        method: "GET",
-        url: "./api/session/login",
-		params: {
+    l.requests.makej("GET", "./api/session/login", {
+		query: {
 			login: document.getElementById("login-username").value,
 			password: document.getElementById("login-password").value
 		}
@@ -145,10 +154,8 @@ var loginRequest = function(_login, _password) {
  * make a request to api to logout. unset login and token so logout succeed every time
  */
 var logoutRequest = function() {
-	m.request({
-		method: "GET",
-        url: "./api/session/logout",
-		params: {
+	l.requests.make("GET", "./api/session/logout", {
+		query: {
 			login: getLogin(),
 			token: getToken()
 		}
@@ -162,11 +169,62 @@ var logoutRequest = function() {
 var Data = {
 	app: {
 		directory: [],
+		renderTab: function() {
+			tabRender = []
+			Data.app.directory.forEach(function (el) {
+				if (el.isDir) {
+					tabRender.push(l("tr", {"class": "directory", "data-element": el.name}, 
+						l("td", {"scope": "row"}, l("a", {
+							href: "#!/app!" + encodeURI(path) + "/" + encodeURI(el.name)
+						}, el.name)),
+						l("td", {}, ""),
+						l("td", {style: "text-align:right"}, 
+							l("img", {src: "./icons/folder-x.svg", class:"icon-action", events: {
+								click: (e) => {
+									Data.app.rmRequest(e.target)
+								}
+							}}, null)
+						)
+					))
+				}
+			});
+
+			Data.app.directory.forEach(function (el) {
+				if (!el.isDir) {
+					tabRender.push(l("tr", {"class": "file", "data-element": el.name}, 
+						l("td", {"scope": "row"}, el.name),
+						l("td", {}, formatByteSize(el.size)),
+						l("td", {style: "text-align:right"}, 
+							l("img", {src: "./icons/file-x.svg", class:"icon-action", events: {
+								click: (e) => {
+									Data.app.rmRequest(e.target)
+								}
+							}}, null),
+							l("img", {src: "./icons/download.svg", class:"icon-action", events: {
+								click: (e) => {
+									Data.app.download(e.target)
+								}
+							}}, null),
+							l("img", {src: "./icons/edit.svg", class:"icon-action", events: {
+								click: (e) => {
+									Data.app.edit(e.target)
+								}
+							}}, null),
+							l("img", {src: "./icons/move.svg", class:"icon-action", events: {
+								click: (e) => {
+									Data.app.move(e.target)
+								}
+							}}, null)
+						)
+					))
+				}
+			});
+
+			l.renderElement(document.getElementById("app-display-tab"), l("tbody", {}, ...tabRender))
+		},
 		lsRequest: function() {
-			m.request({
-				method: "GET",
-				url: "./api/files/ls",
-				params: {
+			l.requests.makej("GET", "./api/files/ls",  {
+				query: {
 					login: getLogin(),
 					token: getToken(),
 					path: path
@@ -175,156 +233,170 @@ var Data = {
 			.then(function(data) {
 				if (data.status == "success") {
 					Data.app.directory = data.directory
+					Data.app.renderTab()
 				} else {
 					errorApp()
 				}
 			})
+		},
+		newFolder: function() {
+			directoryName = window.prompt("Create a directory on path : " + (path != "" ? path : "/"))
+			l.requests.makej("GET", "./api/files/mkdir", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					path: path + "/" + directoryName
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					l.routes.reload()
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		newFile: function() {
+			fileName = window.prompt("Create a file on path : " + (path != "" ? path : "/"))
+			l.requests.makej("GET", "./api/files/touch", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					path: path + "/" + fileName
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					l.routes.reload()
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		rmRequest: function(el) {
+			if(window.confirm("Are you sure ?")) {
+				l.requests.makej("GET", "./api/files/rm", {
+					query: {
+						login: getLogin(),
+						token: getToken(),
+						path: path + "/" + el.parentNode.parentNode.getAttribute("data-element")
+					}
+				}).then(data => {
+					if (data.status == "success") {
+						fadeOut(el.parentNode.parentNode)
+					} else {
+						window.alert(data.message)
+					}
+				})
+			}
 		}
 	}
 }
 
 // mithril object for /login route
 var Login = {
-	oninit: function() {
+	init: function() {
 		if (isLoggedIn()) {
 			redirect("/app", path)
 		}
+		Array.from(document.getElementsByClassName("app-only")).forEach(el => {
+			el.style.display = "none"
+		})
 	},
 	view: function () {
-		return m("div", { "class": "container mt-5" },
-			m("div", { "id": "formContent" },
-				m("form",
-					[
-						m("div", { "class": "form-group" },
-							[
-								m("label", { "class": "col-form-label", "for": "inputDefault" },
-									"Username"
-								),
-								m("input", { "class": "form-control", "type": "text", "placeholder": "Username...", "id": "login-username" })
-							]
+		return l("div", { "class": "container mt-5" },
+			l("div", { "id": "formContent" },
+				l("form", {events: {
+					"submit": function(e) {
+						e.preventDefault()
+					}
+				}},
+					l("div", { "class": "form-group" },
+						l("label", { "class": "col-form-label", "for": "login-username" },
+							"Username"
 						),
-						m("div", { "class": "form-group" },
-							[
-								m("label", { "class": "col-form-label", "for": "inputDefault" },
-									"Password"
-								),
-								m("input", { "class": "form-control", "type": "password", "placeholder": "Password...", "id": "login-password" })
-							]
+						l("input", { "class": "form-control", "type": "text", "placeholder": "Username...", "id": "login-username" })
+					),
+					l("div", { "class": "form-group" },
+						l("label", { "class": "col-form-label", "for": "login-password" },
+							"Password"
 						),
-						m("button", { "class": "btn btn-secondary", "type": "submit", onclick: loginRequest},
-							"Log In"
-						)
-					]
+						l("input", { "class": "form-control", "type": "password", "placeholder": "Password...", "id": "login-password" })
+					),
+					l("button", { "class": "btn btn-secondary", "type": "submit", "events": {
+						"click": loginRequest
+					}}, "Log In")
 				)
 			)
 		)
 	}
 }
 
+
 // mithril object for /logout route
 var Logout = {
-	oninit: function() {
+	init: function() {
 		logoutRequest()
+		Array.from(document.getElementsByClassName("app-only")).forEach(el => {
+			el.style.display = "none"
+		})
 	},
 	view: function () {
-		return m("div", { "class": "container mt-5" }, [
-			m("p", "Déconnecté"),
-			m("button", {"class": "btn btn-secondary", onclick: function() {
-				redirect("/login")
+		return l("div", { "class": "container mt-5" }, 
+			l("p", {}, "Déconnecté"),
+			l("button", {"class": "btn btn-secondary", events: {
+				"click": function() {
+					redirect("/login")
+				}
 			}}, "Log In")
-		])
+		)
 	}
 }
 
 // mithril object for /app route
 var App = {
-	oninit: function() {
+	init: function() {
 		if (isLoggedInFast()) {
 			Data.app.lsRequest()
+			Array.from(document.getElementsByClassName("app-only")).forEach(el => {
+				el.style.display = ""
+			})
 		} else {
 			errorApp()
 		}
 	},
 	view: function() {
-		tabRender = []
-		Data.app.directory.forEach(function (el) {
-			if (el.isDir) {
-				tabRender.push(m("tr", {"class": "directory"}, [
-					m("th", {"scope": "row"}, el.name),
-					m("th", ""),
-					m("th", "Actions")
-				]))
-			}
-		});
-
-		Data.app.directory.forEach(function (el) {
-			if (!el.isDir) {
-				tabRender.push(m("tr", {"class": "file"}, [
-					m("th", {"scope": "row"}, el.name),
-					m("th", el.size),
-					m("th", "Actions")
-				]))
-			}
-		});
-		return m("div", {"class": "container"},
-			m("table", {"class":"table table-hover"}, 
-				m("tbody", tabRender)
+		pathTab = []
+		parts = path.split("/")
+		for (i = 1; i < parts.length; i++) {
+			pathTab.push(
+				l("span", {}, " / "),
+				l("a", { href: "#!/app!" + encodeURI(parts.slice(0, i+1).join("/")) }, parts[i])
+			)
+		}
+		return l("div", {"class": "container"},
+			l("p", {}, 
+				l("a", { href: "#!/app!/" }, "root"),
+				...pathTab),
+			l("table", {"class":"hoverable", "id": "app-display-tab"}, 
+				l("thead", {},
+					l("tr", {},
+						l("th", {}, "Name"),
+						l("th", {}, "Size"),
+						l("th", {style: "text-align:right;"}, "Actions")
+					)
+				)
 			)
 		)
 	}
 }
 
-SimpleEfficientRouter = {
-	view: document.getElementById("view"),
-	symbol: "#!",
-	defaultRoute: "/login",
-	routes: {
-		"/login": Login,
-		"/logout": Logout,
-		"/app": App,
-	},
-	setURL: function(route, path) {
-		window.location.hash = SimpleEfficientRouter.symbol + route
-	},
-	setRoute: function(route) {
-		m.mount(view, SimpleEfficientRouter.routes[route])
-	},
-	match: function(route) {
-		var found = false
-		Object.keys(SimpleEfficientRouter.routes).forEach(function(val) {
-			routeRegexp = new RegExp("(^\\" + val + "$|^\\" + val + "!)")
-			if (routeRegexp.test(route)) {
-				SimpleEfficientRouter.setRoute(val)
-				found = true
-				return
-			}
-		})
-		if (!found) {
-			if (SimpleEfficientRouter.routes[route] != undefined) {
-				SimpleEfficientRouter.setRoute(SimpleEfficientRouter.defaultRoute)
-			}
-			return false
-		}
-		return true
-	},
-	onroutechange: function() {},
-	listener: function(e) {
-		pathRegexp = new RegExp("^" + SimpleEfficientRouter.symbol)
-		if (pathRegexp.test(window.location.hash)) {
-			route = window.location.hash.replace(SimpleEfficientRouter.symbol, "")
-			SimpleEfficientRouter.onroutechange()
-			SimpleEfficientRouter.match(route)
-		} else {
-			SimpleEfficientRouter.setRoute(SimpleEfficientRouter.defaultRoute)
-		}
-	},
-	init: function() {
-		window.addEventListener("hashchange", SimpleEfficientRouter.listener)
-		SimpleEfficientRouter.listener()
+l.routes.onroutechange = function() {
+	path = l.routes.getParam()
+	if (path[path.length - 1] == "/") {
+		path = path.substring(0, path.length - 1)
 	}
 }
-
-SimpleEfficientRouter.onroutechange = function() {
-	evaluatePath()
-}
-SimpleEfficientRouter.init()
+l.routes.def(document.getElementById("view"), "/login", {
+	"/login": Login,
+	"/logout": Logout,
+	"/app": App
+})

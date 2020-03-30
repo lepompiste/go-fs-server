@@ -6,45 +6,30 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>FS-Server</title>
-	<script src="jquery.js"></script>
-	<script src="mithril.js"></script>
-	<script src="bootstrap.min.js"></script>
+	<script src="leloux.js" defer></script>
 	<script src="app.js" defer></script>
-	<link rel="stylesheet" href="bootstrap.min.css" />
-	<link rel="stylesheet" href="login.css" />
+	<link rel="stylesheet" href="mini.css" />
+	<style>
+		.icon-action {
+			cursor: pointer
+		}
+	</style>
 </head>
 
 <body>
-	<nav class="navbar navbar-expand-lg navbar-light bg-light">
-		<div class="container">
-			<a class="navbar-brand" href="">FS-Server</a>
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor03"
-				aria-controls="navbarColor03" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-
-			<div class="collapse navbar-collapse" id="navbarColor03">
-				<ul class="navbar-nav mr-auto">
-					<li class="nav-item">
-						<a class="nav-link" href="#">New file</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="#">New folder</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="#">Upload</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="#!/logout">Logout</a>
-					</li>
-				</ul>
-			</div>
-		</div>
-	</nav>
+	<header>
+		<a class="logo" href="./">FS-Server</a>
+		<span class="button app-only" onclick="Data.app.newFile()">New file</span>
+		<span class="button app-only" style="cursor:pointer;" onclick="Data.app.newFolder()">New folder</span>
+		<span class="button app-only" style="cursor:pointer;">Upload</span>
+		<span class="button app-only" style="cursor:pointer;" href="#!/logout">Logout</span>
+	  </header>
 	
 	<div id="view">
 
 	</div>
+
+	
 </body>
 
 </html>
