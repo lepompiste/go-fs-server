@@ -20,13 +20,14 @@ func (s *server) initAPI(router *httprouter.Router) {
 	router.GET("/api/files/touch", s.touch)
 	router.GET("/api/files/mkdir", s.mkdir)
 	router.GET("/api/files/cat", s.cat)
-	router.GET("/api/files/echo", s.echo)
+	router.POST("/api/files/echo", s.echo)
 	router.GET("/api/files/mv", s.mv)
 	router.GET("/api/files/get", s.get)
 
 	router.GET("/api/users/add", s.userAdd)
 	router.GET("/api/users/del", s.userDel)
 	router.GET("/api/users/mod", s.userMod)
+	router.GET("/api/users/list", s.userList)
 
 	router.GET("/api/session/login", s.userLogin)
 	router.GET("/api/session/logout", s.userLogout)

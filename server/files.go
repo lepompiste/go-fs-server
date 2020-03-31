@@ -12,7 +12,7 @@ import (
 
 const (
 	// MAXUPLOAD Maximum size of uploaded files
-	MAXUPLOAD = 20000000000
+	MAXUPLOAD = 128 * 1000 * 1000 // 128MB
 )
 
 // DirEntry represents file or directory
@@ -93,10 +93,10 @@ func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	successResponse(w, BaseAPIResponse{Status: "success"})
 }
 
-func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	errMultipartForm := r.ParseMultipartForm(MAXUPLOAD)
-
-	w.Header().Set("Content-Type", "application/json")
+func (s *server) upload(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Parse our multipart form, 10 << 20 specifies a maximum
+	// upload of 10 MB files.
+	errMultipartForm := r.ParseMultipartForm(10 << 20)
 
 	if errMultipartForm != nil {
 		errorResponse(w, errMultipartForm.Error())
@@ -142,7 +142,20 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		}
 	}
 
-	successResponse(w, BaseAPIResponse{Status: "success"})
+	w.Write([]byte(`<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>Success upload !</title>
+		<link rel="stylesheet" href="../../mini.css">
+	</head>
+	<body>
+		<p>You uploaded your files successfully !</p>
+		<button onclick="window.close()">Close window</button>
+	</body>
+	</html>`))
 }
 
 type catResponse struct {
@@ -271,6 +284,11 @@ func (s *server) mv(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	}
 
 	if !verifyPath(dest, w) {
+		return
+	}
+
+	if _, errE := os.Stat("." + dest); errE == nil {
+		errorResponse(w, "File already exists")
 		return
 	}
 

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Modify file</title>
+	<link rel="stylesheet" href="mini.css" />
+	<script src="leloux.js"></script>
+</head>
+<body>
+	<form id="mod-form">
+		<div class="input-group vertical">
+			<textarea id="content"></textarea>
+		</div>
+		<button>Save</button>
+	</form>
+
+	<script>
+		login = sessionStorage.getItem("login") != null ? sessionStorage.getItem("login") : localStorage.getItem("login")
+		token = sessionStorage.getItem("token") != null ? sessionStorage.getItem("token") : localStorage.getItem("token")
+		file = sessionStorage.getItem("file-mod") != null ? sessionStorage.getItem("file-mod") : localStorage.getItem("file-mod")
+
+		l.requests.makej("GET", "./api/files/cat", {
+			query: {
+				login: login,
+				token: token,
+				path: file
+			}
+		}).then(data => {
+			if (data.status == "success") {
+				document.getElementById("content").value = data.content
+			} else {
+				window.alert(data.message)
+			}
+		})
+
+		document.getElementById("mod-form").addEventListener("submit", function(event) {
+			event.preventDefault()
+			l.requests.makej("POST", "./api/files/echo", {
+				body: {
+					login: login,
+					token: token,
+					path: file,
+					content: document.getElementById("content").value
+				}
+			}).then(data => {
+				if (data.status != "success") {
+					window.alert(data.message)
+				}
+			})
+		})
+	</script>
+</body>
+</html>

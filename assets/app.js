@@ -1,39 +1,56 @@
 const storageMode = sessionStorage
 var path = ""
+var cutPath = null
+var cutFileName = null
+
+const videoFilesExt = ["webm", "mp4", "avi", "wmv", "mov", "mkv"]
+const imageFilesExt = ["jpg", "png", "gif", "webp", "tiff", "psd", "bmp", "jpeg", "svg"]
+const docFilesExt = ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "ppsm", "odt", "ods", "odp", "odg", "odc", "odf", "odb", "odi", "odm", "pdf"]
+const musicFilesExt = ["wav", "ogg", "flac", "mp3"]
+const codeFilesExt = ["c", "h", "cpp", "hpp", "js", "css", "html", "php", "go", "java", "py", "rs", "ruby", "jl", "f", "for","cs", "swift", "sql", "sh", "bat", "kt", "kts", "lua", "r"]
+
+function getFileExt(filename) {
+	let parts = filename.split('.')
+	return parts.length > 1 ? parts.pop() : ""
+}
+
+function getFileImage(filename) {
+	let ext = getFileExt(filename)
+	let link = "file.svg"
+	if (ext == "") {
+		return link
+	}
+
+	if (videoFilesExt.includes(ext)) {
+		link = "file-video.svg"
+	} else if (imageFilesExt.includes(ext)) {
+		link =  "file-image.svg"
+	} else if (docFilesExt.includes(ext)) {
+		link = "file-doc.svg"
+	} else if (musicFilesExt.includes(ext)) {
+		link = "file-music.svg"
+	} else if (codeFilesExt.includes(ext)) {
+		link = "file-code.svg"
+	}
+	return link
+}
 
 function redirect(_route, _path) {
 	l.routes.goto(_route, _path)
 }
 
-// use it to evaluate the error and display a message
-function errorApp() {
-	if (isLoggedInFast()) {
-		if (isLoggedIn()) {
-			window.alert("Error, probably path")
-			path = "/"
-			redirect("/app", path)
-		} else {
-			window.alert("Error, session expired")
-			redirect("/logout")
-		}
-	} else {
-		window.alert("Error, you aren't logged in")
-		redirect("/login")
-	}
-}
-
 function fadeOut(element) {
-    var op = 1;  // initial opacity
+	var op = 1;  // initial opacity
+	var pas = 0.05;
     var timer = setInterval(function () {
-        if (op <= 0.1){
+        if (op <= 0){
             clearInterval(timer);
 			element.style.display = 'none';
 			element.parentNode.removeChild(element)
         }
         element.style.opacity = op;
-        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
-        op -= op * 0.05;
-    }, 10);
+        op -= pas;
+    }, 15);
 }
 
 /**
@@ -80,12 +97,20 @@ function unsetToken() {
 	storageMode.removeItem("token")
 }
 
+function setUploadPath() {
+	storageMode.setItem("upload-path", path)
+}
+
+function setModFile(filePath) {
+	storageMode.setItem("file-mod", filePath)
+}
+
 /**
  * Check if the user is well authenticated, using api
  */
 function isLoggedIn() {
 	if (getLogin() != null && getToken() != null) {
-		return true
+		return true // Can be improved
 	}
 	return false
 }
@@ -95,15 +120,15 @@ function isLoggedIn() {
  */
 function isLoggedInFast() {
 	if (getLogin() != null && getToken() != null) {
-		return true // to fix
+		return true
 	}
 	return false
 }
 
 function formatByteSize(size) {
-	_size = size
-	units = ["B", "KB", "MB", "GB"]
-	unit_number = 0
+	let _size = size
+	let units = ["B", "KB", "MB", "GB"]
+	let unit_number = 0
 	while (~~(_size / 1000) >= 1 && unit_number < 3) {
 		unit_number++
 		_size = ~~(_size / 1000)
@@ -111,21 +136,6 @@ function formatByteSize(size) {
 	return _size + " " + units[unit_number]
 }
 
-var testLoginRequest = function () {
-	resp = false
-	l.requests.makej("GET", "./api/session/test", {
-		query: {
-			login: getLogin(),
-			token: getToken()
-		}
-	})
-    .then(function(data) {
-        if (data.status == "success") {
-			resp = true
-		}
-	})
-	return resp
-}
 
 /**
  * make a request to api to login, getting the token and (already known) login.
@@ -165,23 +175,39 @@ var logoutRequest = function() {
 }
 
 
-// mithril data
+/**
+ * Object that contains app data, including vars and callback functions of APP route.
+ * Other routes callback were built before Leloux and are located in global scope.
+ */
 var Data = {
 	app: {
 		directory: [],
 		renderTab: function() {
-			tabRender = []
+			let tabRender = []
 			Data.app.directory.forEach(function (el) {
 				if (el.isDir) {
 					tabRender.push(l("tr", {"class": "directory", "data-element": el.name}, 
-						l("td", {"scope": "row"}, l("a", {
+						l("td", {"data-label": "Folder"}, l("a", {
 							href: "#!/app!" + encodeURI(path) + "/" + encodeURI(el.name)
-						}, el.name)),
-						l("td", {}, ""),
-						l("td", {style: "text-align:right"}, 
-							l("img", {src: "./icons/folder-x.svg", class:"icon-action", events: {
+						},
+							l("img", {src: "./icons/folder.svg", style: "display: table-cell; vertical-align: text-top;"}, null), 
+							" " + el.name
+						)),
+						l("td", {"data-label":""}, ""),
+						l("td", {style: "text-align:right", "data-label": "Actions"}, 
+							l("img", {src: "./icons/folder-x.svg", class:"icon-action", "title": "Remove folder", events: {
 								click: (e) => {
 									Data.app.rmRequest(e.target)
+								}
+							}}, null),
+							l("img", {src: "./icons/rename.svg", class:"icon-action", "title": "Rename folder", events: {
+								click: (e) => {
+									Data.app.rename(e.target)
+								}
+							}}, null),
+							l("img", {src: "./icons/cut.svg", class:"icon-action", "title": "Cut folder", events: {
+								click: (e) => {
+									Data.app.cut(e.target)
 								}
 							}}, null)
 						)
@@ -192,27 +218,33 @@ var Data = {
 			Data.app.directory.forEach(function (el) {
 				if (!el.isDir) {
 					tabRender.push(l("tr", {"class": "file", "data-element": el.name}, 
-						l("td", {"scope": "row"}, el.name),
-						l("td", {}, formatByteSize(el.size)),
-						l("td", {style: "text-align:right"}, 
-							l("img", {src: "./icons/file-x.svg", class:"icon-action", events: {
+						l("td", {"data-label": "File"},
+							l("img", {src: "./icons/" + getFileImage(el.name), style: "display: table-cell; vertical-align: text-top;"}, null),
+							" " + el.name
+						),
+						l("td", {"data-label": "Size"}, formatByteSize(el.size)),
+						l("td", {style: "text-align:right", "data-label": "Actions"}, 
+							l("img", {src: "./icons/file-x.svg", class:"icon-action", "title": "Remove file", events: {
 								click: (e) => {
 									Data.app.rmRequest(e.target)
 								}
 							}}, null),
-							l("img", {src: "./icons/download.svg", class:"icon-action", events: {
-								click: (e) => {
-									Data.app.download(e.target)
-								}
-							}}, null),
-							l("img", {src: "./icons/edit.svg", class:"icon-action", events: {
+							l("img", {src: "./icons/edit.svg", class:"icon-action", "title": "Modify file", events: {
 								click: (e) => {
 									Data.app.edit(e.target)
 								}
 							}}, null),
-							l("img", {src: "./icons/move.svg", class:"icon-action", events: {
+							l("img", {src: "./icons/rename.svg", class:"icon-action", "title": "Rename file", events: {
 								click: (e) => {
-									Data.app.move(e.target)
+									Data.app.rename(e.target)
+								}
+							}}, null),
+							l("a", {"download": el.name, href: "./api/files/get?login=" + getLogin() + "&token=" + getToken() + "&path=" + path + "/" + el.name},
+								l("img", {src: "./icons/download.svg", class:"icon-action", "title": "Download file"}, null)
+							),
+							l("img", {src: "./icons/cut.svg", class:"icon-action", "title": "Cut file", events: {
+								click: (e) => {
+									Data.app.cut(e.target)
 								}
 							}}, null)
 						)
@@ -235,12 +267,12 @@ var Data = {
 					Data.app.directory = data.directory
 					Data.app.renderTab()
 				} else {
-					window.alert(data.message)
+					window.alert(data.message + "\nYou can log out, and retry.")
 				}
 			})
 		},
 		newFolder: function() {
-			directoryName = window.prompt("Create a directory on path : " + (path != "" ? path : "/"))
+			let directoryName = window.prompt("Create a directory on path : " + (path != "" ? path : "/"))
 
 			if (directoryName == null) {
 				return
@@ -261,7 +293,7 @@ var Data = {
 			})
 		},
 		newFile: function() {
-			fileName = window.prompt("Create a file on path : " + (path != "" ? path : "/"))
+			let fileName = window.prompt("Create a file on path : " + (path != "" ? path : "/"))
 			
 			if (fileName == null) {
 				return
@@ -297,11 +329,86 @@ var Data = {
 					}
 				})
 			}
+		},
+		moveRequest: function(el) { // Not used anymore, but stay in case of
+			let filePath = path + "/" + el.parentNode.parentNode.getAttribute("data-element")
+			let dest = window.prompt("Move file " + filePath + " to :",  filePath)
+
+			if (dest == null) {
+				return
+			}
+
+			l.requests.makej("GET", "./api/files/mv", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					src: filePath,
+					dest: dest
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					l.routes.reload()
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		cut: function (el) {
+			cutPath = path + "/" + el.parentNode.parentNode.getAttribute("data-element")
+			cutFileName = el.parentNode.parentNode.getAttribute("data-element")
+		},
+		paste: function () {
+			if (cutPath != null && cutFileName != null) {
+				l.requests.makej("GET", "./api/files/mv", {
+					query: {
+						login: getLogin(),
+						token: getToken(),
+						src: cutPath,
+						dest: path + "/" + cutFileName
+					}
+				}).then(data => {
+					if (data.status == "success") {
+						l.routes.reload()
+					} else {
+						window.alert(data.message)
+					}
+				})
+			} else {
+				window.alert("Please select a file/folder to cut.")
+			}
+		},
+		rename: function (el) {
+			let fileName = el.parentNode.parentNode.getAttribute("data-element")
+			let newName = window.prompt("Rename + " + fileName + " to :",  fileName)
+
+			if (newName == null) {
+				return
+			}
+
+			l.requests.makej("GET", "./api/files/mv", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					src: path + "/" + fileName,
+					dest: path + "/" + newName
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					l.routes.reload()
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		edit: function(el) {
+			let filePath = path + "/" + el.parentNode.parentNode.getAttribute("data-element")
+			setModFile(filePath)
+			window.open("mod.html", "modify", "menubar=no, statusbar=no, toolbar=no, location=no, width=800, height=600")
 		}
 	}
 }
 
-// mithril object for /login route
+// Leloux object for /login route
 var Login = {
 	init: function() {
 		if (isLoggedIn()) {
@@ -312,36 +419,26 @@ var Login = {
 		})
 	},
 	view: function () {
-		return l("div", { "class": "container mt-5" },
-			l("div", { "id": "formContent" },
-				l("form", {events: {
-					"submit": function(e) {
-						e.preventDefault()
-					}
-				}},
-					l("div", { "class": "form-group" },
-						l("label", { "class": "col-form-label", "for": "login-username" },
-							"Username"
-						),
-						l("input", { "class": "form-control", "type": "text", "placeholder": "Username...", "id": "login-username" })
-					),
-					l("div", { "class": "form-group" },
-						l("label", { "class": "col-form-label", "for": "login-password" },
-							"Password"
-						),
-						l("input", { "class": "form-control", "type": "password", "placeholder": "Password...", "id": "login-password" })
-					),
-					l("button", { "class": "btn btn-secondary", "type": "submit", "events": {
-						"click": loginRequest
-					}}, "Log In")
-				)
-			)
+		return l("form", {events: {
+				"submit": function(e) {
+					e.preventDefault()
+				}
+			}},
+				l("div", {class: "input-group vertical"},
+					l("label", {"for": "login-username"}, "Username"),
+					l("input", {"type": "text", "placeholder": "Username...", "id": "login-username" }),
+					l("label", {"for": "login-password" }, "Password"),
+					l("input", {"type": "password", "placeholder": "Password...", "id": "login-password" })
+				),
+				l("button", {"type": "submit", "events": {
+					"click": loginRequest
+				}}, "Log In")
 		)
 	}
 }
 
 
-// mithril object for /logout route
+// Leloux object for /logout route
 var Logout = {
 	init: function() {
 		logoutRequest()
@@ -350,18 +447,16 @@ var Logout = {
 		})
 	},
 	view: function () {
-		return l("div", { "class": "container mt-5" }, 
-			l("p", {}, "Déconnecté"),
+		return  [l("p", {}, "Déconnecté"),
 			l("button", {"class": "btn btn-secondary", events: {
 				"click": function() {
 					redirect("/login")
 				}
-			}}, "Log In")
-		)
+			}}, "Log In")]
 	}
 }
 
-// mithril object for /app route
+// Leloux object for /app route
 var App = {
 	init: function() {
 		if (isLoggedInFast()) {
@@ -370,22 +465,23 @@ var App = {
 				el.style.display = ""
 			})
 		} else {
-			errorApp()
+			redirect("/login", path + "/")
 		}
 	},
 	view: function() {
-		pathTab = []
-		parts = path.split("/")
+		let pathTab = []
+		let parts = path.split("/")
 		for (i = 1; i < parts.length; i++) {
 			pathTab.push(
 				l("span", {}, " / "),
 				l("a", { href: "#!/app!" + encodeURI(parts.slice(0, i+1).join("/")) }, parts[i])
 			)
 		}
-		return l("div", {"class": "container"},
-			l("p", {}, 
+		return [
+			l("pre", {},
 				l("a", { href: "#!/app!/" }, "root"),
-				...pathTab),
+				...pathTab
+			),
 			l("table", {"class":"hoverable", "id": "app-display-tab"}, 
 				l("thead", {},
 					l("tr", {},
@@ -395,7 +491,24 @@ var App = {
 					)
 				)
 			)
-		)
+		]
+	}
+}
+
+var UserManager = {
+	init: function() {
+		if (isLoggedInFast()) {
+			Array.from(document.getElementsByClassName("app-only")).forEach(el => {
+				el.style.display = "none"
+			})
+		} else {
+			redirect("/login")
+		}
+	},
+	view: function() {
+		return [
+			l("form", {},)
+		]
 	}
 }
 
@@ -408,5 +521,6 @@ l.routes.onroutechange = function() {
 l.routes.def(document.getElementById("view"), "/login", {
 	"/login": Login,
 	"/logout": Logout,
-	"/app": App
+	"/app": App,
+	"/user_manager": UserManager
 })

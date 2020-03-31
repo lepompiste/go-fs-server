@@ -13,6 +13,12 @@
 		.icon-action {
 			cursor: pointer
 		}
+		:root {
+			--table-body-hover-back-color: #eeeeee;
+		}
+		table:not(.horizontal) {
+			max-height: none;
+		}
 	</style>
 </head>
 
@@ -21,7 +27,8 @@
 		<a class="logo" href="./">FS-Server</a>
 		<span class="button app-only" onclick="Data.app.newFile()">New file</span>
 		<span class="button app-only" onclick="Data.app.newFolder()">New folder</span>
-		<span class="button app-only">Upload</span>
+		<span class="button app-only" onclick="setUploadPath(); window.open('upload.html', 'upload', 'menubar=no, statusbar=no, toolbar=no, location=no, width=400, height=300')">Upload</span>
+		<span class="button app-only" onclick="Data.app.paste()">Paste</span>
 		<a class="button app-only" style="cursor:pointer;" href="#!/logout">Logout</a>
 	  </header>
 	

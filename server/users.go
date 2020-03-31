@@ -76,6 +76,57 @@ func (s *server) userDel(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	errorResponse(w, "not enough arguments")
 }
 
+// UserListResponse represent a list of user, in a response
+type UsersListResponse struct {
+	BaseAPIResponse
+	Users []User `json:"users"`
+}
+
+func (s *server) userList(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	login := r.FormValue("login")
+	token := r.FormValue("token")
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if !s.logged(login, token, w) {
+		return
+	}
+
+	user, _ := s.getUser(login)
+
+	if user.Privilege != 1 {
+		errorResponse(w, "you do not have the right")
+		return
+	}
+
+	users, err := s.db.Query("SELECT login, privilege FROM users")
+
+	if err != nil {
+		errorResponse(w, err.Error())
+		return
+	}
+
+	resp := UsersListResponse{}
+	resp.Status = "success"
+	resp.Users = make([]User, 0)
+	var loginResult string
+	var privilegeResult int64
+
+	for users.Next() {
+		errQuery := users.Scan(&loginResult, &privilegeResult)
+
+		if errQuery != nil {
+			errorResponse(w, err.Error())
+			return
+		}
+
+		resp.Users = append(resp.Users, User{loginResult, int(privilegeResult)})
+	}
+
+	successResponse(w, resp)
+	return
+}
+
 func (s *server) userMod(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
