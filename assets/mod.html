@@ -37,7 +37,6 @@
 
 		function submitCallback (event) {
 			event.preventDefault()
-			console.log(document.getElementById("content").value)
 			l.requests.makej("POST", "./api/files/echo", {
 				body: {
 					login: login,
