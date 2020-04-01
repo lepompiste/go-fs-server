@@ -53,6 +53,16 @@ function fadeOut(element) {
     }, 15);
 }
 
+function removeOnlyAdminAccess() {
+	if (getPrivilege() != null) {
+		if (getPrivilege() != 1) {
+			Array.from(document.getElementsByClassName("admin-only")).forEach(el => {
+				el.style.display = "none"
+			})
+		}
+	}
+}
+
 /**
  * Get the login in internal storage
  */
@@ -65,6 +75,13 @@ function getLogin() {
  */
 function getToken() {
 	return storageMode.getItem("token")
+}
+
+/**
+ * Get the token in internal storage
+ */
+function getPrivilege() {
+	return storageMode.getItem("privilege")
 }
 
 /**
@@ -84,6 +101,14 @@ function setToken(token) {
 }
 
 /**
+ * Set the privilege in internal storage
+ * @param {int} privilege 
+ */
+function setPrivilege(privilege) {
+	storageMode.setItem("privilege", privilege)
+}
+
+/**
  * Remove the login in internal storage
  */
 function unsetLogin() {
@@ -95,6 +120,13 @@ function unsetLogin() {
  */
 function unsetToken() {
 	storageMode.removeItem("token")
+}
+
+/**
+ * Remove the privilege in internal storage
+ */
+function unsetPrivilege() {
+	storageMode.removeItem("privilege")
 }
 
 function setUploadPath() {
@@ -153,6 +185,8 @@ var loginRequest = function(_login, _password) {
         if (data.status == "success") {
 			setLogin(data.login)
 			setToken(data.token)
+			setPrivilege(data.privilege)
+			removeOnlyAdminAccess()
 			redirect("/app", path)
 		} else {
 			window.alert(data.message)
@@ -172,6 +206,7 @@ var logoutRequest = function() {
     })
 	unsetLogin()
 	unsetToken()
+	unsetPrivilege()
 }
 
 
@@ -405,6 +440,158 @@ var Data = {
 			setModFile(filePath)
 			window.open("mod.html", "modify", "menubar=no, statusbar=no, toolbar=no, location=no, width=800, height=600")
 		}
+	},
+	users_manager: {
+		listUsers: function () {
+			let usersTab = []
+			l.requests.makej("GET", "./api/users/list", {
+				query: {
+					login: getLogin(),
+					token: getToken()
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					data.users.forEach(user => {
+						usersTab.push(l("tr", {"data-user": user.login},
+							l("td", {"data-label": "Username"}, user.login),
+							l("td", {"data-label": "Privilege"}, user.privilege),
+							l("td", {"data-label": "Actions", style: "text-align: right"},
+								l("a", {class: "icon-action", events: {
+									click: (e) => {
+										Data.users_manager.removeUser(e.target)
+									}
+								}}, "Remove"),
+								" ",
+								l("a", {class: "icon-action", events: {
+									click: (e) => {
+										Data.users_manager.changePassword(e.target)
+									}
+								}}, "Change password"),
+								" ",
+								l("a", {class: "icon-action", events: {
+									click: (e) => {
+										Data.users_manager.changePrivilege(e.target)
+									}
+								}}, "Change privilege")
+							)
+						))
+					})
+					l.renderElement(document.getElementById("users-tab"), usersTab)
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		removeUser: function(el) {
+			l.requests.makej("GET", "./api/users/del", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					username: el.parentNode.parentNode.getAttribute("data-user")
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					fadeOut(el.parentNode.parentNode)
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		addUser: function() {
+			let newUsername = window.prompt("Username :")
+			let newPassword = window.prompt("Password :")
+			let newPrivilege = window.prompt("Privilege :", 2)
+
+			l.requests.makej("GET", "./api/users/add", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					username: newUsername,
+					password: newPassword,
+					privilege: newPrivilege
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					l.routes.reload()
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		changePassword: function(el) {
+			let newPassword = window.prompt("New password for " + el.parentNode.parentNode.getAttribute("data-user") + " :")
+
+			if (newPassword == null) {
+				return
+			}
+
+			l.requests.makej("GET", "./api/users/mod", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					username: el.parentNode.parentNode.getAttribute("data-user"),
+					password: newPassword
+				}
+			}).then(data => {
+				if (data.status == "success") {
+				} else {
+					window.alert(data.message)
+				}
+			})
+		},
+		changePrivilege: function(el) {
+			let newPrivilege = window.prompt("New privilege for " + el.parentNode.parentNode.getAttribute("data-user") + " :")
+
+			if (newPrivilege == null) {
+				return
+			}
+
+			l.requests.makej("GET", "./api/users/mod", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					username: el.parentNode.parentNode.getAttribute("data-user"),
+					privilege: newPrivilege
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					l.routes.reload()
+				} else {
+					window.alert(data.message)
+				}
+			})
+		}
+	},
+	password: {
+		changePassword: function() {
+			let pw1 = document.getElementById("newpassword-1").value
+			let pw2 = document.getElementById("newpassword-2").value
+
+			if (pw1 != pw2) {
+				window.alert("Password not equals to confirm")
+				return
+			}
+
+			if (pw1 == "" || pw1 == null || pw1 == undefined) {
+				window.alert("Password cannot be null")
+				return
+			}
+
+			l.requests.makej("GET", "./api/users/mod", {
+				query: {
+					login: getLogin(),
+					token: getToken(),
+					username: getLogin(),
+					password: pw1
+				}
+			}).then(data => {
+				if (data.status == "success") {
+					window.alert("Password changed successfully !")
+				} else {
+					window.alert(data.message)
+				}
+			})
+		}
 	}
 }
 
@@ -414,7 +601,7 @@ var Login = {
 		if (isLoggedIn()) {
 			redirect("/app", path)
 		}
-		Array.from(document.getElementsByClassName("app-only")).forEach(el => {
+		Array.from(document.getElementsByClassName("button-only")).forEach(el => {
 			el.style.display = "none"
 		})
 	},
@@ -442,9 +629,10 @@ var Login = {
 var Logout = {
 	init: function() {
 		logoutRequest()
-		Array.from(document.getElementsByClassName("app-only")).forEach(el => {
+		Array.from(document.getElementsByClassName("button-only")).forEach(el => {
 			el.style.display = "none"
 		})
+		removeOnlyAdminAccess()
 	},
 	view: function () {
 		return  [l("p", {}, "Déconnecté"),
@@ -461,9 +649,13 @@ var App = {
 	init: function() {
 		if (isLoggedInFast()) {
 			Data.app.lsRequest()
+			Array.from(document.getElementsByClassName("button-only")).forEach(el => {
+				el.style.display = "none"
+			})
 			Array.from(document.getElementsByClassName("app-only")).forEach(el => {
 				el.style.display = ""
 			})
+			removeOnlyAdminAccess()
 		} else {
 			redirect("/login", path + "/")
 		}
@@ -495,20 +687,74 @@ var App = {
 	}
 }
 
-var UserManager = {
+var UsersManager = {
 	init: function() {
 		if (isLoggedInFast()) {
-			Array.from(document.getElementsByClassName("app-only")).forEach(el => {
+			Array.from(document.getElementsByClassName("button-only")).forEach(el => {
 				el.style.display = "none"
 			})
+			Array.from(document.getElementsByClassName("users-manager-only")).forEach(el => {
+				el.style.display = ""
+			})
+			removeOnlyAdminAccess()
+			Data.users_manager.listUsers()
 		} else {
 			redirect("/login")
 		}
 	},
 	view: function() {
 		return [
-			l("form", {},)
+			l("button", {
+				events: {
+					click: () => {
+						Data.users_manager.addUser()
+					}
+				}
+			}, "Add user"),
+			l("table", {class: "hoverable"},
+				l("thead", {},
+					l("tr", {},
+						l("th", {}, "Username"),
+						l("th", {}, "Privilege"),
+						l("th", {style: "text-align: right"}, "Actions")
+					)
+				),
+				l("tbody", {id: "users-tab"}, null)
+			)
 		]
+	}
+}
+
+var Password = {
+	init: function () {
+		Array.from(document.getElementsByClassName("button-only")).forEach(el => {
+			el.style.display = "none"
+		})
+		Array.from(document.getElementsByClassName("change-password-only")).forEach(el => {
+			el.style.display = ""
+		})
+		removeOnlyAdminAccess()
+	},
+	view: function () {
+		return l("form", {events: {
+			submit: (e) => {
+				e.preventDefault()
+			}
+		}},
+			l("div", {class: "input-group vertical"},
+				l("label", {for: "newpassword-1"}, "New Password"),
+				l("input", {type: "password", id: "newpassword-1", placeholder: "New password..."})
+			),
+			l("div", {class: "input-group vertical"},
+				l("label", {for: "newpassword-2"}, "Confirm password"),
+				l("input", {type: "password", id: "newpassword-2", placeholder: "Confirm..."})
+			),
+			l("button", {type: "submit", events: {
+				click: (e) => {
+					Data.password.changePassword()
+				}
+			}}, "Submit")
+		)
 	}
 }
 
@@ -522,5 +768,6 @@ l.routes.def(document.getElementById("view"), "/login", {
 	"/login": Login,
 	"/logout": Logout,
 	"/app": App,
-	"/user_manager": UserManager
+	"/users_manager": UsersManager,
+	"/password": Password
 })

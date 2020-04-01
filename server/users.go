@@ -76,7 +76,7 @@ func (s *server) userDel(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	errorResponse(w, "not enough arguments")
 }
 
-// UserListResponse represent a list of user, in a response
+// UsersListResponse represent a list of user, in a response
 type UsersListResponse struct {
 	BaseAPIResponse
 	Users []User `json:"users"`
@@ -116,7 +116,7 @@ func (s *server) userList(w http.ResponseWriter, r *http.Request, ps httprouter.
 		errQuery := users.Scan(&loginResult, &privilegeResult)
 
 		if errQuery != nil {
-			errorResponse(w, err.Error())
+			errorResponse(w, errQuery.Error())
 			return
 		}
 
@@ -165,7 +165,7 @@ func (s *server) userMod(w http.ResponseWriter, r *http.Request, ps httprouter.P
 				}
 				if password != "" {
 					hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-					s.db.Exec("UPDATE users SET privilege = ? WHERE login = ?", hash, username)
+					s.db.Exec("UPDATE users SET password = ? WHERE login = ?", hash, username)
 				}
 				successResponse(w, BaseAPIResponse{Status: "success"})
 			} else {

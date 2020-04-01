@@ -25,11 +25,14 @@
 <body>
 	<header>
 		<a class="logo" href="./">FS-Server</a>
-		<span class="button app-only" onclick="Data.app.newFile()">New file</span>
-		<span class="button app-only" onclick="Data.app.newFolder()">New folder</span>
-		<span class="button app-only" onclick="setUploadPath(); window.open('upload.html', 'upload', 'menubar=no, statusbar=no, toolbar=no, location=no, width=400, height=300')">Upload</span>
-		<span class="button app-only" onclick="Data.app.paste()">Paste</span>
-		<a class="button app-only" style="cursor:pointer;" href="#!/logout">Logout</a>
+		<span class="button button-only app-only" onclick="Data.app.newFile()">New file</span>
+		<span class="button button-only app-only" onclick="Data.app.newFolder()">New folder</span>
+		<span class="button button-only app-only" onclick="setUploadPath(); window.open('upload.html', 'upload', 'menubar=no, statusbar=no, toolbar=no, location=no, width=400, height=300')">Upload</span>
+		<span class="button button-only app-only" onclick="Data.app.paste()">Paste</span>
+		<a class="button button-only users-manager-only change-password-only" href="#!/app">App</a>
+		<a class="button button-only app-only change-password-only admin-only" style="cursor:pointer;" href="#!/users_manager">Manager</a>
+		<a class="button button-only app-only users-manager-only" href="#!/password">Password</a>
+		<a class="button button-only app-only users-manager-only change-password-only" href="#!/logout">Logout</a>
 	  </header>
 	
 	<div id="view">
