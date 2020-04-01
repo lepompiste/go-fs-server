@@ -34,6 +34,7 @@ func (s *server) initInstall() {
 			db.Exec("INSERT INTO users (login, password, privilege) VALUES (?, ?, ?)", "admin", adminHash, 1)             // creating first admin user
 			db.Exec("CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY UNIQUE, login TEXT, expires INTEGER)")   // sessions table creation
 			s.db = db
+			s.db.SetMaxOpenConns(1)
 		}
 	} else {
 		db, errSQLOpen := sql.Open("sqlite3", s.dbpath+"/fs-server.db")
@@ -42,6 +43,7 @@ func (s *server) initInstall() {
 			os.Exit(-1)
 		} else {
 			s.db = db
+			s.db.SetMaxOpenConns(1)
 		}
 	}
 }
