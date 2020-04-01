@@ -204,7 +204,7 @@ function(){
 				bodyParts = []
 				if (props.body != undefined) {
 					Object.keys(props.body).forEach(key => {
-						bodyParts.push(key + "=" + props.body[key])
+						bodyParts.push(key + "=" + encodeURIComponent(props.body[key]))
 					})
 				}
 				xhr.send(props.body != undefined ? bodyParts.join("&") : (props.bodyRaw != undefined ? props.bodyRaw : null));

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"runtime"
 
 	_ "github.com/mattn/go-sqlite3" // to use with sql
 	"golang.org/x/crypto/bcrypt"
@@ -23,11 +24,18 @@ func Exists(name string) bool {
 func (s *server) initInstall() {
 	currentWD, _ := os.Getwd()
 	var fullDBPath string
-	if s.dbpath[0] == '/' {
+	if runtime.GOOS == "windows" {
+		fmt.Println("Windows detected. Using database path as is.")
 		fullDBPath = s.dbpath + "/fs-server.db"
-	} else {
-		fullDBPath = currentWD + "/" + s.dbpath + "/fs-server.db"
+	} else { // For a certain reason (that I ignore), on linux, and probably all unix, opening an existing database opens it on the wrong folder when using relative path. So we make it absolute here
+		if s.dbpath[0] == '/' {
+			fullDBPath = s.dbpath + "/fs-server.db"
+		} else {
+			fullDBPath = currentWD + "/" + s.dbpath + "/fs-server.db"
+		}
+		fmt.Println("Unix detected. Making database path absolute if not already. Database path is now :", fullDBPath)
 	}
+
 	if !Exists(s.dbpath + "/fs-server.db") {
 		fmt.Println("No configuration detected, installing new one. Username will be admin, and password will be admin. It is recommended to change it on first connection.")
 		db, errSQLOpen := sql.Open("sqlite3", fullDBPath) // Database creation
