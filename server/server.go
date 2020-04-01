@@ -50,6 +50,10 @@ func setupCloseHandler(s *server) {
 	}()
 }
 
+func testDefer() {
+	fmt.Println("deferred")
+}
+
 // InitServer starts the webserver, initializing api, fileserver and installation directory
 // dir = root of file server, dbp = database path, port = port of the server
 func InitServer(dir, dbp, port string) {
@@ -61,6 +65,7 @@ func InitServer(dir, dbp, port string) {
 	SERVER.initInstall()
 
 	setupCloseHandler(&SERVER)
+	defer testDefer()
 
 	err := os.Chdir(SERVER.dirpath)
 	if err != nil {

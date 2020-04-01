@@ -22,6 +22,7 @@ func Exists(name string) bool {
 // initInstall create or load necessarily files
 func (s *server) initInstall() {
 	if !Exists(s.dbpath + "/fs-server.db") {
+		fmt.Println(s.dbpath + "/fs-server.db")
 		fmt.Println("No configuration detected, installing new one. Username will be admin, and password will be admin. It is recommended to change it on first connection.")
 		db, errSQLOpen := sql.Open("sqlite3", s.dbpath+"/fs-server.db") // Database creation
 
@@ -38,6 +39,7 @@ func (s *server) initInstall() {
 		}
 	} else {
 		db, errSQLOpen := sql.Open("sqlite3", s.dbpath+"/fs-server.db")
+		fmt.Println(s.dbpath + "/fs-server.db")
 		if errSQLOpen != nil {
 			fmt.Println("Error initializing database")
 			os.Exit(-1)
