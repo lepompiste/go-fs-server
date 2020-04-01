@@ -39,6 +39,7 @@ func successResponse(w http.ResponseWriter, r interface{}) {
 	w.Write(bytes)
 }
 
+// Ctrl + C Handler
 func setupCloseHandler(s *server) {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -50,10 +51,6 @@ func setupCloseHandler(s *server) {
 	}()
 }
 
-func testDefer() {
-	fmt.Println("deferred")
-}
-
 // InitServer starts the webserver, initializing api, fileserver and installation directory
 // dir = root of file server, dbp = database path, port = port of the server
 func InitServer(dir, dbp, port string) {
@@ -62,12 +59,12 @@ func InitServer(dir, dbp, port string) {
 	SERVER.port = port
 	SERVER.dbpath = dbp
 
-	SERVER.initInstall()
+	SERVER.initInstall() // Create database (installation.go)
 
-	setupCloseHandler(&SERVER)
-	defer testDefer()
+	setupCloseHandler(&SERVER) // Handle stop by Ctrl+C, by closing the database
 
 	err := os.Chdir(SERVER.dirpath)
+
 	if err != nil {
 		fmt.Println("Error Path")
 		os.Exit(-1)

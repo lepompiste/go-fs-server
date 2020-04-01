@@ -20,9 +20,8 @@ func main() {
 			port = os.Args[3]
 		}
 		server.InitServer(os.Args[1], os.Args[2], port)
-		//fmt.Println("dir :", server.GetDir())
 	} else {
-		fmt.Println("Arguments Error")
+		fmt.Println("Usage : fs-server <files path> <db path> [port]")
 		os.Exit(-1)
 	}
 }

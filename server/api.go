@@ -7,6 +7,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+/**
+ * Many endpoints require auth, so I could use a generic Auth handler
+ * Same for path verif
+ */
+
 // Test http handler for api
 func (s *server) Test(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fmt.Fprint(w, "TEST REUSSI")
