@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -38,11 +37,7 @@ func (s *server) makeSession(login string) (token string, expires int) {
 	token = RandStringRunes(64, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	expires = int(time.Now().Add(2 * time.Hour).Unix())
 
-	_, err := s.db.Exec("INSERT INTO sessions (login, token, expires) VALUES (?, ?, ?)", login, token, expires)
-
-	if err != nil {
-		fmt.Println("Error making session")
-	}
+	s.db.Exec("INSERT INTO sessions (login, token, expires) VALUES (?, ?, ?)", login, token, expires)
 
 	return
 }
@@ -56,13 +51,11 @@ func (s *server) checkAuth(login, password string) *Auth {
 	err := row.Scan(&_login, &_pwHash, &_privilege)
 
 	if err != nil {
-		fmt.Println("No user name " + login)
 		return nil // No user named login
 	}
 
 	errPw := bcrypt.CompareHashAndPassword([]byte(_pwHash), []byte(password))
 	if errPw != nil {
-		fmt.Println("Wrong password")
 		return nil
 	}
 
@@ -74,8 +67,6 @@ func (s *server) checkAuth(login, password string) *Auth {
 
 	authInfos.Token = _token
 	authInfos.Expires = _expires
-
-	fmt.Println("Success :", authInfos)
 
 	return &authInfos
 }
