@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -193,6 +194,7 @@ func (s *server) userLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	w.Header().Set("Content-Type", "application/json")
 
 	if auth == nil {
+		fmt.Println("Wrong auth")
 		errorResponse(w, "no match login/password")
 		return
 	}

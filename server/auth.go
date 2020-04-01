@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -37,7 +38,11 @@ func (s *server) makeSession(login string) (token string, expires int) {
 	token = RandStringRunes(64, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	expires = int(time.Now().Add(2 * time.Hour).Unix())
 
-	s.db.Exec("INSERT INTO sessions (login, token, expires) VALUES (?, ?, ?)", login, token, expires)
+	_, err := s.db.Exec("INSERT INTO sessions (login, token, expires) VALUES (?, ?, ?)", login, token, expires)
+
+	if err != nil {
+		fmt.Println("Error making session")
+	}
 
 	return
 }
@@ -45,28 +50,32 @@ func (s *server) makeSession(login string) (token string, expires int) {
 // checkAuth check for login and password and return the Auth infos if login/password match, nil else
 func (s *server) checkAuth(login, password string) *Auth {
 	var _login, _pwHash string
-	var _privilege int
+	var _privilege int64
 	s.db.Exec("DELETE FROM sessions WHERE expires < ?", time.Now().Unix())
 	row := s.db.QueryRow("SELECT login, password, privilege FROM users WHERE login = ?", login)
 	err := row.Scan(&_login, &_pwHash, &_privilege)
 
 	if err != nil {
+		fmt.Println("No user name " + login)
 		return nil // No user named login
 	}
 
 	errPw := bcrypt.CompareHashAndPassword([]byte(_pwHash), []byte(password))
 	if errPw != nil {
+		fmt.Println("Wrong password")
 		return nil
 	}
 
 	var authInfos Auth
 	authInfos.Login = _login
-	authInfos.Privilege = _privilege
+	authInfos.Privilege = int(_privilege)
 
 	_token, _expires := s.makeSession(_login)
 
 	authInfos.Token = _token
 	authInfos.Expires = _expires
+
+	fmt.Println("Success :", authInfos)
 
 	return &authInfos
 }
