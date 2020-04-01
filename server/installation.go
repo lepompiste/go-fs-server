@@ -21,11 +21,10 @@ func Exists(name string) bool {
 
 // initInstall create or load necessarily files
 func (s *server) initInstall() {
+	currentWD, _ := os.Getwd()
 	if !Exists(s.dbpath + "/fs-server.db") {
-		fmt.Println(os.Getwd())
-		fmt.Println(s.dbpath + "/fs-server.db")
 		fmt.Println("No configuration detected, installing new one. Username will be admin, and password will be admin. It is recommended to change it on first connection.")
-		db, errSQLOpen := sql.Open("sqlite3", s.dbpath+"/fs-server.db") // Database creation
+		db, errSQLOpen := sql.Open("sqlite3", currentWD+"/"+s.dbpath+"/fs-server.db") // Database creation
 
 		if errSQLOpen != nil {
 			fmt.Println("Error initializing database")
@@ -39,9 +38,7 @@ func (s *server) initInstall() {
 			s.db.SetMaxOpenConns(1)
 		}
 	} else {
-		db, errSQLOpen := sql.Open("sqlite3", s.dbpath+"/fs-server.db")
-		fmt.Println(os.Getwd())
-		fmt.Println(s.dbpath + "/fs-server.db")
+		db, errSQLOpen := sql.Open("sqlite3", currentWD+"/"+s.dbpath+"/fs-server.db")
 		if errSQLOpen != nil {
 			fmt.Println("Error initializing database")
 			os.Exit(-1)
