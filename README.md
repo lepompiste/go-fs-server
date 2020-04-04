@@ -1,6 +1,19 @@
 # go-fs-server
 Simple filesystem server in GO and JS
 
+## Features
+
+- List directories
+- Create new files and directories
+- Remove files and directories
+- Cut/Paste files and directories
+- Edit files
+- Rename files and directories
+- Download files
+- Upload multiple files
+- Manage users of application
+- Manage users privilege (WIP, actually there are just administrators and others)
+
 ## Usage
 
 ```bash
