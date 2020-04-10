@@ -26,7 +26,7 @@ function getFileImage(filename) {
 	} else if (imageFilesExt.includes(ext)) {
 		link =  "file-image.svg"
 	} else if (docFilesExt.includes(ext)) {
-		link = "file-doc.svg"
+		link = "file-document.svg"
 	} else if (musicFilesExt.includes(ext)) {
 		link = "file-music.svg"
 	} else if (codeFilesExt.includes(ext)) {
@@ -604,6 +604,9 @@ var Login = {
 		Array.from(document.getElementsByClassName("button-only")).forEach(el => {
 			el.style.display = "none"
 		})
+		Array.from(document.getElementsByClassName("login-only")).forEach(el => {
+			el.style.display = ""
+		})
 	},
 	view: function () {
 		return l("form", {events: {
@@ -631,6 +634,9 @@ var Logout = {
 		logoutRequest()
 		Array.from(document.getElementsByClassName("button-only")).forEach(el => {
 			el.style.display = "none"
+		})
+		Array.from(document.getElementsByClassName("logout-only")).forEach(el => {
+			el.style.display = ""
 		})
 		removeOnlyAdminAccess()
 	},
