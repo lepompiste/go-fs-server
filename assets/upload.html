@@ -6,9 +6,24 @@
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>Upload files</title>
 	<link rel="stylesheet" href="./mini.css" />
+	<style>
+		#layout {
+			position: absolute;
+			top: 0;
+			left: 0;
+			display: none;
+			justify-content: center;
+			align-items: center;
+			background-color: rgba(255, 255, 255, 0.5);
+			height: 100%;
+			width: 100%;
+		}
+	</style>
 </head>
 <body>
-	<form action="./api/files/upload" enctype="multipart/form-data" method="POST">
+	<div id="layout"><div class="spinner"></div></div>
+
+	<form action="./api/files/upload" enctype="multipart/form-data" method="POST" id="uploader">
 		<input type="file" name="uploads" multiple label="Drop files here or click to upload." help="Then click submit to send files" is="drop-files">
 		<input type="hidden" id="login-send" name="login" value="">
 		<input type="hidden" id="token-send" name="token" value="">
@@ -20,7 +35,11 @@
 		document.getElementById("login-send").value = sessionStorage.getItem("login") != null ? sessionStorage.getItem("login") : localStorage.getItem("login")
 		document.getElementById("token-send").value = sessionStorage.getItem("token") != null ? sessionStorage.getItem("token") : localStorage.getItem("token")
 		document.getElementById("path-send").value = sessionStorage.getItem("upload-path") != null ? sessionStorage.getItem("upload-path") : localStorage.getItem("upload-path")
+	
+		document.getElementById("uploader").addEventListener("submit", (e) => {
+			document.getElementById("layout").style.display = "flex"
+		})
 	</script>
-	<script type="module" src="drop-files-element.js"></script>
+	<script type="module" src="./drop-files-element.js"></script>
 </body>
 </html>
