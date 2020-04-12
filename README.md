@@ -1,5 +1,5 @@
 # go-fs-server
-Simple filesystem server in GO and JS
+Simple one binary filesystem server in GO and JS.
 
 ## Features
 
@@ -13,6 +13,9 @@ Simple filesystem server in GO and JS
 - Upload multiple files
 - Manage users of application
 - Manage users privilege (WIP, actually there are just administrators and others)
+- Embedded in-binary website
+- Automatic database creation
+- Only one portable binary (associated with one or more databases)
 
 ## Usage
 
