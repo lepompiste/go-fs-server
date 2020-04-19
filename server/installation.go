@@ -36,6 +36,7 @@ func (s *server) initInstall() {
 		fmt.Println("Unix detected. Making database path absolute if not already. Database path is now :", fullDBPath)
 	}
 
+	// Creting and initializing database if not exists
 	if !Exists(s.dbpath + "/fs-server.db") {
 		fmt.Println("No configuration detected, installing new one. Username will be admin, and password will be admin. It is recommended to change it on first connection.")
 		db, errSQLOpen := sql.Open("sqlite3", fullDBPath) // Database creation
@@ -51,7 +52,7 @@ func (s *server) initInstall() {
 			s.db = db
 			s.db.SetMaxOpenConns(1)
 		}
-	} else {
+	} else { // Else, we just open it
 		db, errSQLOpen := sql.Open("sqlite3", fullDBPath)
 		if errSQLOpen != nil {
 			fmt.Println("Error initializing database")

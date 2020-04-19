@@ -6,12 +6,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (s *server) serveFile(file string) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		w.Write([]byte(file))
-	}
-}
-
-func (s *server) initStatic(router *httprouter.Router) {
+func (s *server) initStatic(router *httprouter.Router) { // Handler for `assets`, serving the files of the web app. They are embedded in a go file to create one standalone binary
 	router.NotFound = http.FileServer(assets)
 }

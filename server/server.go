@@ -39,7 +39,7 @@ func successResponse(w http.ResponseWriter, r interface{}) {
 	w.Write(bytes)
 }
 
-// Ctrl + C Handler
+// Ctrl + C Handler, closing the database properly for unix systems
 func setupCloseHandler(s *server) {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -63,17 +63,16 @@ func InitServer(dir, dbp, port string) {
 
 	setupCloseHandler(&SERVER) // Handle stop by Ctrl+C, by closing the database
 
+	// Got to the working dir, to simplify path handling of requests
 	err := os.Chdir(SERVER.dirpath)
-
 	if err != nil {
 		fmt.Println("Error Path")
 		os.Exit(-1)
 	}
 
-	router := httprouter.New()
-	SERVER.initAPI(router)
-	SERVER.initStatic(router)
+	router := httprouter.New() // Creating router
+	SERVER.initAPI(router)     // Adding routes for API
+	SERVER.initStatic(router)  // Adding routes for Web app, using vfsgen
 	fmt.Println("Starting server on locahost:" + SERVER.port)
 	http.ListenAndServe(":"+SERVER.port, router)
-
 }

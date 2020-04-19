@@ -17,6 +17,7 @@ func (s *server) Test(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	fmt.Fprint(w, "TEST REUSSI")
 }
 
+// initialisation of all api endpoints (routes)
 func (s *server) initAPI(router *httprouter.Router) {
 	router.GET("/api/test", s.Test)
 	router.GET("/api/files/ls", s.ls)

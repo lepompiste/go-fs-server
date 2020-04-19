@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Http Handler Func : Creates a new user
 func (s *server) userAdd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -49,6 +50,7 @@ func (s *server) userAdd(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 }
 
+// Http Handler Func : Delete the given user
 func (s *server) userDel(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -82,6 +84,7 @@ type UsersListResponse struct {
 	Users []User `json:"users"`
 }
 
+// Http Handler Func : list existing users
 func (s *server) userList(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -127,6 +130,9 @@ func (s *server) userList(w http.ResponseWriter, r *http.Request, ps httprouter.
 	return
 }
 
+// Http Handler Func : edit user password or privilege
+// An admin user can modify both password and privilege of all users
+// A normal user can modify only his own password, but not his privilege
 func (s *server) userMod(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -185,6 +191,7 @@ type loginResponse struct {
 	Auth
 }
 
+// Http Handler Func : try to login user, returning token or error
 func (s *server) userLogin(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	password := r.FormValue("password")
@@ -203,6 +210,7 @@ func (s *server) userLogin(w http.ResponseWriter, r *http.Request, ps httprouter
 	successResponse(w, resp)
 }
 
+// Http Handler Func : Logout user, deleting his session by token
 func (s *server) userLogout(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -222,6 +230,7 @@ type testSession struct {
 	Auth
 }
 
+// Http Handler Func : Debug api endpoint, printing all informations about user
 func (s *server) sessionTest(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")

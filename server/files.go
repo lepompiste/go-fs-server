@@ -29,6 +29,9 @@ type LsResponse struct {
 	Directory []DirEntry `json:"directory"`
 }
 
+/**
+Local function used to verify if the provided path is valid. `.` and `..` are forbidden in path to avoid getting to the parent directory of the working fir
+*/
 func verifyPath(path string, w http.ResponseWriter) bool {
 	parts := strings.Split(path, "/")
 	for _, part := range parts {
@@ -40,6 +43,7 @@ func verifyPath(path string, w http.ResponseWriter) bool {
 	return true
 }
 
+// Http Handler Func : returns the content of the provided folder
 func (s *server) ls(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -70,6 +74,7 @@ func (s *server) ls(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 
 }
 
+// Http Handler Func : remove the provided file path or folder path
 func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -93,6 +98,7 @@ func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	successResponse(w, BaseAPIResponse{Status: "success"})
 }
 
+// Http Handler Func : upload provided files to the provided path
 func (s *server) upload(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Parse our multipart form, 10 << 20 specifies a maximum
 	// upload of 10 MB files.
@@ -142,6 +148,7 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		}
 	}
 
+	// If the requests is successful, the requests print a success page which enable user to close the window
 	w.Write([]byte(`<!DOCTYPE html>
 	<html lang="en">
 	<head>
@@ -158,11 +165,13 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	</html>`))
 }
 
+// response structure of cat requests
 type catResponse struct {
 	BaseAPIResponse
 	Content string `json:"content"`
 }
 
+// Http Handler Func : returns the content of the provided file
 func (s *server) cat(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -191,6 +200,7 @@ func (s *server) cat(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	successResponse(w, resp)
 }
 
+// Http Handler Func : create a new folder with the provided name
 func (s *server) mkdir(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -216,6 +226,7 @@ func (s *server) mkdir(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	successResponse(w, resp)
 }
 
+// Http Handler Func : creates a file with the provided name
 func (s *server) touch(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -242,6 +253,7 @@ func (s *server) touch(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	successResponse(w, resp)
 }
 
+// Http Handler Func : write provided content to the file, erasing the previous content
 func (s *server) echo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -268,6 +280,7 @@ func (s *server) echo(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	successResponse(w, resp)
 }
 
+// Http Handler Func : move the folder or the file provided by path (src) to a new path (dest)
 func (s *server) mv(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")
@@ -303,6 +316,7 @@ func (s *server) mv(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	successResponse(w, resp)
 }
 
+// Http Handler Func : serve the provided file, by path
 func (s *server) get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	login := r.FormValue("login")
 	token := r.FormValue("token")

@@ -17,10 +17,16 @@
 	</form>
 
 	<script>
+		/*
+			Get the login, the token and the file path to edit.
+			There are stored either in the sessionStorage or in the localStorage, depending of the constant in app.js
+			Login and token are created at login time, file is updated when clicking on the edit icon.
+		*/
 		login = sessionStorage.getItem("login") != null ? sessionStorage.getItem("login") : localStorage.getItem("login")
 		token = sessionStorage.getItem("token") != null ? sessionStorage.getItem("token") : localStorage.getItem("token")
 		file = sessionStorage.getItem("file-mod") != null ? sessionStorage.getItem("file-mod") : localStorage.getItem("file-mod")
 
+		// Get the file content, and then put it on the textarea
 		l.requests.makej("GET", "./api/files/cat", {
 			query: {
 				login: login,
@@ -35,6 +41,7 @@
 			}
 		})
 
+		// Handle submit (pressing the save button). Sending the new content to the specified file
 		function submitCallback (event) {
 			event.preventDefault()
 			l.requests.makej("POST", "./api/files/echo", {

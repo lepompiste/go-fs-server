@@ -100,7 +100,7 @@ func (s *server) getUser(login string) (*User, bool) {
 	return &resp, true
 }
 
-// getUser is used to get auth infos
+// getUser is used to get auth infos. It provides more info than getUser, for example token and expiration or session
 func (s *server) getAuth(login, token string) (*Auth, bool) {
 	rowUser := s.db.QueryRow("SELECT login, privilege FROM users WHERE login = ?", login)
 	resp := Auth{}
@@ -116,11 +116,13 @@ func (s *server) getAuth(login, token string) (*Auth, bool) {
 	return &resp, true
 }
 
+// Delete the session of the user in database
 func (s *server) logout(login, token string) {
 	s.db.Exec("DELETE FROM sessions WHERE login = ? AND token = ?", login, token)
 }
 
-// logged is used to automatically respond when check
+// logged is used to automatically respond when check is unsuccessful, and return if the session is valid or not.
+// It is used in files and users api endpoint
 func (s *server) logged(login, token string, w http.ResponseWriter) bool {
 	if !s.checkSession(login, token) {
 		errorResponse(w, "no valid login/token")

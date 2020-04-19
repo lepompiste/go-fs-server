@@ -7,6 +7,9 @@
 	<title>Upload files</title>
 	<link rel="stylesheet" href="./mini.css" />
 	<style>
+		/*
+			Layout for the donut loader
+		*/
 		#layout {
 			position: absolute;
 			z-index: 9999;
@@ -33,10 +36,19 @@
 	</form>
 
 	<script>
+		/*
+			Get the login, the token and the folder to write files on.
+			There are stored either in the sessionStorage or in the localStorage, depending of the constant in app.js
+			Login and token are created at login time, folder path is updated when clicking the upload button.
+
+			There written as value of hidden element of the post form.
+		*/
 		document.getElementById("login-send").value = sessionStorage.getItem("login") != null ? sessionStorage.getItem("login") : localStorage.getItem("login")
 		document.getElementById("token-send").value = sessionStorage.getItem("token") != null ? sessionStorage.getItem("token") : localStorage.getItem("token")
 		document.getElementById("path-send").value = sessionStorage.getItem("upload-path") != null ? sessionStorage.getItem("upload-path") : localStorage.getItem("upload-path")
-	
+		
+
+		// When clicking upload button, display the loader
 		document.getElementById("uploader").addEventListener("submit", (e) => {
 			document.getElementById("layout").style.display = "flex"
 		})
