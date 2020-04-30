@@ -223,7 +223,7 @@ var Data = {
 				if (el.isDir) {
 					tabRender.push(l("tr", {"class": "directory", "data-element": el.name}, 
 						l("td", {"data-label": "Folder"}, l("a", {
-							href: "#!/app!" + encodeURI(path) + "/" + encodeURI(el.name)
+							href: "#!/app!" + path + "/" + el.name
 						},
 							l("img", {src: "./icons/folder.svg", style: "display: table-cell; vertical-align: text-top;"}, null), 
 							" " + el.name
@@ -274,7 +274,7 @@ var Data = {
 									Data.app.rename(e.target)
 								}
 							}}, null),
-							l("a", {"download": el.name, href: "./api/files/get?login=" + getLogin() + "&token=" + getToken() + "&path=" + path + "/" + el.name},
+							l("a", {"download": el.name, href: "./api/files/get?login=" + encodeURIComponent(getLogin()) + "&token=" + encodeURIComponent(getToken()) + "&path=" + encodeURIComponent(path) + "/" + encodeURIComponent(el.name)},
 								l("img", {src: "./icons/download.svg", class:"icon-action", "title": "Download file"}, null)
 							),
 							l("img", {src: "./icons/cut.svg", class:"icon-action", "title": "Cut file", events: {
