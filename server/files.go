@@ -112,6 +112,7 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	login := r.FormValue("login")
 	token := r.FormValue("token")
 	path := r.FormValue("path")
+	w.Header().Set("Content-Type", "application/json")
 
 	if !s.logged(login, token, w) {
 		return
@@ -149,20 +150,7 @@ func (s *server) upload(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 
 	// If the requests is successful, the requests print a success page which enable user to close the window
-	w.Write([]byte(`<!DOCTYPE html>
-	<html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<meta http-equiv="X-UA-Compatible" content="ie=edge">
-		<title>Success upload !</title>
-		<link rel="stylesheet" href="../../mini.css">
-	</head>
-	<body>
-		<p>You uploaded your files successfully !</p>
-		<button onclick="window.close()">Close window</button>
-	</body>
-	</html>`))
+	successResponse(w, BaseAPIResponse{Status: "success"})
 }
 
 // response structure of cat requests
@@ -255,10 +243,10 @@ func (s *server) touch(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 
 // Http Handler Func : write provided content to the file, erasing the previous content
 func (s *server) echo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	login := r.FormValue("login")
-	token := r.FormValue("token")
-	path := r.FormValue("path")
-	content := r.FormValue("content")
+	login := r.PostFormValue("login")
+	token := r.PostFormValue("token")
+	path := r.PostFormValue("path")
+	content := r.PostFormValue("content")
 	w.Header().Set("Content-Type", "application/json")
 
 	if !s.logged(login, token, w) {

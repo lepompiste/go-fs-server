@@ -5,6 +5,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>Upload files</title>
+	<script src="./leloux.js"></script>
+	<script type="module" src="./drop-files-element.js"></script>
 	<link rel="stylesheet" href="./mini.css" />
 	<style>
 		/*
@@ -18,6 +20,7 @@
 			display: none;
 			justify-content: center;
 			align-items: center;
+			flex-direction: column;
 			background-color: rgba(255, 255, 255, 0.5);
 			height: 100%;
 			width: 100%;
@@ -25,16 +28,15 @@
 	</style>
 </head>
 <body>
-	<div id="layout"><div class="spinner"></div></div>
+	<div id="layout"><div class="spinner"></div><div id="progress"></div></div>
 
-	<form action="./api/files/upload" enctype="multipart/form-data" method="POST" id="uploader">
-		<input type="file" name="uploads" multiple label="Drop files here or click to upload." help="Then click submit to send files" is="drop-files">
+	<form action="." enctype="multipart/form-data" method="POST" id="uploader">
+		<input type="file" name="uploads" id="uploads" multiple label="Drop files here or click to upload." help="Then click submit to send files" is="drop-files">
 		<input type="hidden" id="login-send" name="login" value="">
 		<input type="hidden" id="token-send" name="token" value="">
 		<input type="hidden" id="path-send" name="path" value="">
 		<input type="submit" value="Submit">
 	</form>
-
 	<script>
 		/*
 			Get the login, the token and the folder to write files on.
@@ -43,16 +45,57 @@
 
 			There written as value of hidden element of the post form.
 		*/
-		document.getElementById("login-send").value = sessionStorage.getItem("login") != null ? sessionStorage.getItem("login") : localStorage.getItem("login")
-		document.getElementById("token-send").value = sessionStorage.getItem("token") != null ? sessionStorage.getItem("token") : localStorage.getItem("token")
-		document.getElementById("path-send").value = sessionStorage.getItem("upload-path") != null ? sessionStorage.getItem("upload-path") : localStorage.getItem("upload-path")
+		var login = sessionStorage.getItem("login") != null ? sessionStorage.getItem("login") : localStorage.getItem("login")
+		var token = sessionStorage.getItem("token") != null ? sessionStorage.getItem("token") : localStorage.getItem("token")
+		var path = sessionStorage.getItem("upload-path") != null ? sessionStorage.getItem("upload-path") : localStorage.getItem("upload-path")
 		
-
 		// When clicking upload button, display the loader
 		document.getElementById("uploader").addEventListener("submit", (e) => {
+			e.preventDefault()
 			document.getElementById("layout").style.display = "flex"
+
+			data = new FormData()
+
+			for (i = 0; i < document.getElementById("uploads").files.length; i++) {
+				data.append("uploads", document.getElementById("uploads").files[i])
+			}
+
+			data.append("login", login)
+			data.append("token", token)
+			data.append("path", path)
+
+			l.requests.makej("POST", "./api/files/upload", {
+				headers: {
+					'Content-type': null
+				},
+				uploadEvents: {
+					"progress": function (e) {
+						document.getElementById("progress").innerText = Math.round(e.loaded / e.total * 100) + " %"
+					}
+				},
+				bodyRaw: data
+			}).then(data => {
+				if (data.status == "success") {
+					document.body.innerHTML = '<!DOCTYPE html>\
+					<html lang="en">\
+					<head>\
+						<meta charset="UTF-8">\
+						<meta name="viewport" content="width=device-width, initial-scale=1.0">\
+						<meta http-equiv="X-UA-Compatible" content="ie=edge">\
+						<title>Success upload !</title>\
+						<link rel="stylesheet" href="../../mini.css">\
+					</head>\
+					<body>\
+						<p>You uploaded your files successfully !</p>\
+						<p>After you close the window, reload to see the changes.</p>\
+						<button onclick="window.close()">Close window</button>\
+					</body>\
+					</html>'
+				} else {
+					window.alert(data.message)
+				}
+			})
 		})
 	</script>
-	<script type="module" src="./drop-files-element.js"></script>
 </body>
 </html>
