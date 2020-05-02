@@ -100,8 +100,8 @@ func (s *server) rm(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 
 // Http Handler Func : upload provided files to the provided path
 func (s *server) upload(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// Parse our multipart form, 10 << 20 specifies a maximum
-	// upload of 10 MB files.
+	// Parse our multipart form, 10 << 20 specifies a maximum of 10MB of its file parts stored in the memory, the remainder will be stored in temporary files
+	// This does NOT specifies a maximum file or upload size. To do so, you have to use http.MaxByteReader.
 	errMultipartForm := r.ParseMultipartForm(10 << 20)
 
 	if errMultipartForm != nil {
