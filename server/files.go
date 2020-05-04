@@ -229,7 +229,7 @@ func (s *server) touch(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		return
 	}
 
-	file, err := os.OpenFile("."+path, os.O_CREATE, os.ModePerm)
+	file, err := os.OpenFile("."+path, os.O_CREATE, 0664)
 	defer file.Close()
 
 	if err != nil {
