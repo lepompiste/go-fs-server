@@ -15,7 +15,7 @@ function getFileExt(filename) {
 }
 
 function getFileImage(filename) {
-	let ext = getFileExt(filename)
+	let ext = getFileExt(filename).toLowerCase()
 	let link = "file.svg"
 	if (ext == "") {
 		return link
