@@ -17,6 +17,12 @@ Simple one binary filesystem server in GO and JS.
 - Automatic database creation
 - Only one portable binary (associated with one or more databases)
 
+## Build
+
+To build the binary, you just need to type the command `go build` at the root of the project.
+
+There is a case for which you'll need to run a script : if you've modified the website interface source code (anything in the `assets` directory). You'll need to run the Scripts/assets.go, by building it and then running it (Windows binary is already built).
+
 ## Usage
 
 ```bash
