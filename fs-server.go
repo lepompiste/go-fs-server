@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/lepompiste/fs-server/server"
+	"github.com/robinjulien/fs-server/server"
 )
 
 func init() {
